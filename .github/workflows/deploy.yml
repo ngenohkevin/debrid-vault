@@ -57,8 +57,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
 
       - name: Deploy to Dokploy via API
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
