@@ -1,24 +1,81 @@
 "use client";
 
+import { useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DownloadCard } from "@/components/downloads/download-card";
+import { DownloadGroupCard } from "@/components/downloads/download-group-card";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/hooks/use-downloads";
 import { useStorage } from "@/hooks/use-storage";
 import { WifiOff, Download, Loader2 } from "lucide-react";
+import type { DownloadItem } from "@/lib/types";
+
+interface DownloadEntry {
+  type: "single";
+  item: DownloadItem;
+}
+
+interface GroupEntry {
+  type: "group";
+  groupId: string;
+  groupName: string;
+  items: DownloadItem[];
+}
+
+type Entry = DownloadEntry | GroupEntry;
+
+function buildEntries(downloads: DownloadItem[]): { active: Entry[]; completed: Entry[] } {
+  const groups = new Map<string, DownloadItem[]>();
+  const singles: DownloadItem[] = [];
+
+  for (const d of downloads) {
+    if (d.groupId) {
+      const existing = groups.get(d.groupId) || [];
+      existing.push(d);
+      groups.set(d.groupId, existing);
+    } else {
+      singles.push(d);
+    }
+  }
+
+  const entries: Entry[] = [];
+
+  // Add groups
+  for (const [groupId, items] of groups) {
+    entries.push({
+      type: "group",
+      groupId,
+      groupName: items[0].groupName || groupId,
+      items,
+    });
+  }
+
+  // Add singles
+  for (const item of singles) {
+    entries.push({ type: "single", item });
+  }
+
+  const isActive = (e: Entry) => {
+    if (e.type === "group") {
+      return e.items.some((i) => ["downloading", "resolving", "pending", "moving"].includes(i.status));
+    }
+    return ["downloading", "resolving", "pending", "moving"].includes(e.item.status);
+  };
+
+  return {
+    active: entries.filter(isActive),
+    completed: entries.filter((e) => !isActive(e)),
+  };
+}
 
 export default function DownloadsPage() {
   const { downloads, loading, error, refresh } = useDownloads();
   const { storage } = useStorage();
 
-  const active = downloads.filter((d) =>
-    ["downloading", "resolving", "pending", "moving"].includes(d.status)
-  );
-  const completed = downloads.filter((d) =>
-    ["completed", "error", "cancelled"].includes(d.status)
-  );
+  const { active, completed } = useMemo(() => buildEntries(downloads), [downloads]);
+  const activeCount = active.reduce((n, e) => n + (e.type === "group" ? e.items.length : 1), 0);
 
   return (
     <AppShell>
@@ -28,7 +85,7 @@ export default function DownloadsPage() {
             <h1 className="text-lg font-semibold">Downloads</h1>
             {!loading && downloads.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {active.length} active &middot; {completed.length} completed
+                {activeCount} active &middot; {completed.length} completed
               </p>
             )}
           </div>
@@ -58,18 +115,38 @@ export default function DownloadsPage() {
             {active.length > 0 && (
               <section className="space-y-2">
                 <h2 className="text-sm font-medium text-muted-foreground">Active</h2>
-                {active.map((item) => (
-                  <DownloadCard key={item.id} item={item} onUpdate={refresh} />
-                ))}
+                {active.map((entry) =>
+                  entry.type === "group" ? (
+                    <DownloadGroupCard
+                      key={entry.groupId}
+                      groupId={entry.groupId}
+                      groupName={entry.groupName}
+                      items={entry.items}
+                      onUpdate={refresh}
+                    />
+                  ) : (
+                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} />
+                  )
+                )}
               </section>
             )}
 
             {completed.length > 0 && (
               <section className="space-y-2">
                 <h2 className="text-sm font-medium text-muted-foreground">History</h2>
-                {completed.map((item) => (
-                  <DownloadCard key={item.id} item={item} onUpdate={refresh} />
-                ))}
+                {completed.map((entry) =>
+                  entry.type === "group" ? (
+                    <DownloadGroupCard
+                      key={entry.groupId}
+                      groupId={entry.groupId}
+                      groupName={entry.groupName}
+                      items={entry.items}
+                      onUpdate={refresh}
+                    />
+                  ) : (
+                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} />
+                  )
+                )}
               </section>
             )}
 

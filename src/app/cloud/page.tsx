@@ -108,69 +108,70 @@ function TorrentCard({
             </Button>
           )}
           {isMultiFile && (
-            <>
+            expanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )
+          )}
+        </div>
+      </div>
+
+      {expanded && isMultiFile && (
+        <div className="border-t border-border/40 bg-muted/20">
+          <div className="max-h-72 overflow-y-auto">
+            {loadingFiles && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!loadingFiles && files.map((file, i) => (
+              <div
+                key={file.id}
+                className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs hover:bg-accent/20 transition-colors border-b border-border/20 last:border-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-foreground">{getFileName(file.path)}</p>
+                  <p className="text-[10px] text-muted-foreground">{formatBytes(file.bytes)}</p>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 shrink-0"
+                  disabled={downloading === `${torrent.id}-${i}`}
+                  onClick={() => onDownload(torrent, [getFileName(file.path)], i)}
+                >
+                  {downloading === `${torrent.id}-${i}` ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            ))}
+            {!loadingFiles && files.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-3">No files found</p>
+            )}
+          </div>
+          {!loadingFiles && files.length > 0 && (
+            <div className="border-t border-border/40 px-3.5 py-2.5">
               <Button
                 size="sm"
-                variant="ghost"
-                className="h-8 text-xs gap-1 px-2"
+                variant="secondary"
+                className="w-full h-8 text-xs gap-1.5"
                 disabled={isDownloading}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload(torrent, getFileNames());
-                }}
+                onClick={() => onDownload(torrent, getFileNames())}
               >
                 {isDownloading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <>
                     <Download className="h-3.5 w-3.5" />
-                    All
+                    Download All {files.length} Episodes
                   </>
                 )}
               </Button>
-              {expanded ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {expanded && isMultiFile && (
-        <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
-          {loadingFiles && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
-          )}
-          {!loadingFiles && files.map((file, i) => (
-            <div
-              key={file.id}
-              className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs hover:bg-accent/20 transition-colors border-b border-border/20 last:border-0"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-foreground">{getFileName(file.path)}</p>
-                <p className="text-[10px] text-muted-foreground">{formatBytes(file.bytes)}</p>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0"
-                disabled={downloading === `${torrent.id}-${i}`}
-                onClick={() => onDownload(torrent, [getFileName(file.path)], i)}
-              >
-                {downloading === `${torrent.id}-${i}` ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            </div>
-          ))}
-          {!loadingFiles && files.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-3">No files found</p>
           )}
         </div>
       )}
@@ -220,17 +221,20 @@ export default function CloudPage() {
     const dlId = linkIndex !== undefined ? `${torrent.id}-${linkIndex}` : torrent.id;
     setDownloading(dlId);
 
+    const isMulti = torrent.links.length > 1;
+
     try {
       if (linkIndex !== undefined) {
+        // Single episode download
         const link = torrent.links[linkIndex];
-        await api.startDownload(link, category);
+        const folder = isMulti ? torrent.filename : undefined;
+        await api.startDownload(link, category, folder);
         const name = fileNames[0] || `file ${linkIndex + 1}`;
         toast.success(`Started: ${name}`);
       } else {
-        for (const link of torrent.links) {
-          await api.startDownload(link, category);
-        }
-        toast.success(`Started all ${torrent.links.length} files from ${torrent.filename}`);
+        // Batch download all episodes as a group
+        await api.startBatchDownload(torrent.links, torrent.filename, category);
+        toast.success(`Started all ${torrent.links.length} episodes`);
       }
       router.push("/");
     } catch {

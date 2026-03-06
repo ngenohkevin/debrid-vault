@@ -13,6 +13,9 @@ export interface DownloadItem {
   eta: number;
   error?: string;
   source: string;
+  folder?: string;
+  groupId?: string;
+  groupName?: string;
   filePath?: string;
   createdAt: string;
   completedAt?: string;

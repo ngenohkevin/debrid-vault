@@ -18,10 +18,15 @@ export const api = {
 
   getDownloads: () => fetchAPI<import("./types").DownloadItem[]>("/api/downloads"),
   getDownload: (id: string) => fetchAPI<import("./types").DownloadItem>(`/api/downloads/${id}`),
-  startDownload: (source: string, category: import("./types").Category) =>
+  startDownload: (source: string, category: import("./types").Category, folder?: string) =>
     fetchAPI<import("./types").DownloadItem>("/api/downloads", {
       method: "POST",
-      body: JSON.stringify({ source, category }),
+      body: JSON.stringify({ source, category, ...(folder ? { folder } : {}) }),
+    }),
+  startBatchDownload: (links: string[], groupName: string, category: import("./types").Category) =>
+    fetchAPI<import("./types").DownloadItem[]>("/api/downloads/batch", {
+      method: "POST",
+      body: JSON.stringify({ links, groupName, category }),
     }),
   cancelDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}`, { method: "DELETE" }),
   removeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/remove`, { method: "DELETE" }),
