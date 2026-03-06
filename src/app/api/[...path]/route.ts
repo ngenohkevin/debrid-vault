@@ -68,6 +68,15 @@ async function proxyRequest(
       });
     }
 
+    const responseContentType = response.headers.get("content-type") || "";
+    if (!responseContentType.includes("application/json")) {
+      // Non-JSON response (e.g. Cloudflare error page) — return clean error
+      return NextResponse.json(
+        { error: `Backend returned ${response.status}` },
+        { status: response.status >= 400 ? response.status : 502 }
+      );
+    }
+
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
