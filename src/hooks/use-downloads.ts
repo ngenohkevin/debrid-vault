@@ -25,33 +25,50 @@ export function useDownloads() {
   useEffect(() => {
     fetchDownloads();
 
-    const es = new EventSource(api.getEventsURL());
-    eventSourceRef.current = es;
+    let retryTimer: ReturnType<typeof setTimeout>;
+    let closed = false;
 
-    es.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        const item: DownloadItem = parsed.data;
-        setDownloads((prev) => {
-          const idx = prev.findIndex((d) => d.id === item.id);
-          if (idx >= 0) {
-            const updated = [...prev];
-            updated[idx] = item;
-            return updated;
-          }
-          if (parsed.type === "added") return [item, ...prev];
-          return prev;
-        });
-      } catch { /* ignore parse errors */ }
+    function connect() {
+      if (closed) return;
+      const es = new EventSource(api.getEventsURL());
+      eventSourceRef.current = es;
+
+      es.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          const item: DownloadItem = parsed.data;
+          setDownloads((prev) => {
+            const idx = prev.findIndex((d) => d.id === item.id);
+            if (idx >= 0) {
+              const updated = [...prev];
+              updated[idx] = item;
+              return updated;
+            }
+            if (parsed.type === "added") return [item, ...prev];
+            return prev;
+          });
+        } catch { /* ignore parse errors */ }
+      };
+
+      es.onerror = () => {
+        es.close();
+        if (closed) return;
+        // Reconnect after 3s + refresh data
+        retryTimer = setTimeout(() => {
+          fetchDownloads();
+          connect();
+        }, 3000);
+      };
+    }
+
+    connect();
+
+    return () => {
+      closed = true;
+      clearTimeout(retryTimer);
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
     };
-
-    es.onerror = () => {
-      setTimeout(() => {
-        if (eventSourceRef.current === es) fetchDownloads();
-      }, 3000);
-    };
-
-    return () => { es.close(); eventSourceRef.current = null; };
   }, [fetchDownloads]);
 
   return { downloads, loading, error, refresh: fetchDownloads };
