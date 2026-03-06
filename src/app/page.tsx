@@ -84,7 +84,7 @@ export default function DownloadsPage() {
             <h1 className="text-lg font-semibold">Downloads</h1>
             {!loading && downloads.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {activeCount} active &middot; {completed.length} completed
+                {activeCount} active &middot; {completed.length} history
               </p>
             )}
           </div>

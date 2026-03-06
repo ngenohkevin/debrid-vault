@@ -101,7 +101,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <Play className="h-3.5 w-3.5" />
               </Button>
             )}
-            {item.status === "error" && (
+            {(item.status === "error" || item.status === "cancelled") && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRetry} title="Retry">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
