@@ -42,7 +42,9 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         {item.status === "error" && <AlertCircle className="h-3.5 w-3.5 text-red-400" />}
         {item.status === "resolving" && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
         {item.status === "moving" && <Loader2 className="h-3 w-3 animate-spin text-purple-400" />}
-        {item.status === "paused" && <Pause className="h-3 w-3 text-amber-400" />}
+        {item.status === "paused" && (
+          percent > 0 ? <span className="text-[10px] font-mono text-amber-400">{percent}%</span> : <Pause className="h-3 w-3 text-amber-400" />
+        )}
         {item.status === "queued" && <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
         {(item.status === "pending" || item.status === "cancelled") && (
           <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
@@ -74,7 +76,7 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
           {item.status === "pending" && "waiting"}
           {item.status === "resolving" && "resolving"}
           {item.status === "moving" && "moving"}
-          {item.status === "paused" && <span className="text-amber-400">paused</span>}
+          {item.status === "paused" && <span className="text-amber-400">{percent > 0 ? `${percent}% paused` : "paused"}</span>}
         </span>
       </div>
     </div>
