@@ -81,7 +81,7 @@ export default function DownloadsPage() {
 
   const { active, completed } = useMemo(() => buildEntries(downloads), [downloads]);
   const activeCount = active.reduce((n, e) => n + (e.type === "group" ? e.items.length : 1), 0);
-  const downloadingCount = downloads.filter((d) => d.status === "downloading" || d.status === "queued" || d.status === "resolving").length;
+  const downloadingCount = downloads.filter((d) => d.status === "downloading" || d.status === "resolving" || d.status === "moving").length;
 
   return (
     <AppShell>
