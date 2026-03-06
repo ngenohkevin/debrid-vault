@@ -58,9 +58,9 @@ function buildEntries(downloads: DownloadItem[]): { active: Entry[]; completed: 
 
   const isActive = (e: Entry) => {
     if (e.type === "group") {
-      return e.items.some((i) => ["downloading", "resolving", "pending", "moving", "paused"].includes(i.status));
+      return e.items.some((i) => ["downloading", "resolving", "pending", "moving", "paused", "queued"].includes(i.status));
     }
-    return ["downloading", "resolving", "pending", "moving", "paused"].includes(e.item.status);
+    return ["downloading", "resolving", "pending", "moving", "paused", "queued"].includes(e.item.status);
   };
 
   return {

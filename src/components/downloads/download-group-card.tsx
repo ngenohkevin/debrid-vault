@@ -27,6 +27,7 @@ function EpisodeRow({ item }: { item: DownloadItem }) {
         {item.status === "resolving" && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
         {item.status === "moving" && <Loader2 className="h-3 w-3 animate-spin text-purple-400" />}
         {item.status === "paused" && <Pause className="h-3 w-3 text-amber-400" />}
+        {item.status === "queued" && <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
         {(item.status === "pending" || item.status === "cancelled") && (
           <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
         )}
@@ -42,6 +43,7 @@ function EpisodeRow({ item }: { item: DownloadItem }) {
         {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
         {item.status === "completed" && formatBytes(item.size)}
         {item.status === "error" && <span className="text-red-400">failed</span>}
+        {item.status === "queued" && "queued"}
         {item.status === "pending" && "waiting"}
         {item.status === "resolving" && "resolving"}
         {item.status === "moving" && "moving"}
@@ -73,8 +75,8 @@ export function DownloadGroupCard({
 
   const isAllDone = items.every((i) => ["completed", "error", "cancelled"].includes(i.status));
   const isAllCompleted = items.every((i) => i.status === "completed");
-  const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving"].includes(i.status));
-  const hasDownloading = items.some((i) => i.status === "downloading");
+  const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving", "queued"].includes(i.status));
+  const hasDownloading = items.some((i) => i.status === "downloading" || i.status === "queued");
   const hasPaused = items.some((i) => i.status === "paused");
 
   // ETA: use the max ETA from active downloads
@@ -83,7 +85,7 @@ export function DownloadGroupCard({
   const handlePauseAll = async () => {
     try {
       for (const item of items) {
-        if (item.status === "downloading") {
+        if (item.status === "downloading" || item.status === "queued") {
           await api.pauseDownload(item.id);
         }
       }
@@ -111,7 +113,7 @@ export function DownloadGroupCard({
   const handleCancelAll = async () => {
     try {
       for (const item of items) {
-        if (["downloading", "resolving", "pending", "moving"].includes(item.status)) {
+        if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) {
           await api.cancelDownload(item.id);
         }
       }

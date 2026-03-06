@@ -32,6 +32,7 @@ export function getStatusColor(status: string): string {
     error: "text-red-400",
     resolving: "text-yellow-400",
     pending: "text-yellow-400",
+    queued: "text-muted-foreground",
     moving: "text-purple-400",
     paused: "text-amber-400",
     cancelled: "text-muted-foreground",

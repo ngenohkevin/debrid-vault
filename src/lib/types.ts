@@ -1,4 +1,4 @@
-export type DownloadStatus = "pending" | "resolving" | "downloading" | "moving" | "paused" | "completed" | "error" | "cancelled";
+export type DownloadStatus = "pending" | "queued" | "resolving" | "downloading" | "moving" | "paused" | "completed" | "error" | "cancelled";
 export type Category = "movies" | "tv-shows";
 
 export interface DownloadItem {

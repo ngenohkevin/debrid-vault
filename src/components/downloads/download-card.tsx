@@ -10,7 +10,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
-  const isActive = ["downloading", "resolving", "pending", "moving"].includes(item.status);
+  const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
   const isDone = ["completed", "error", "cancelled"].includes(item.status);
   const isPaused = item.status === "paused";
   const percent = Math.round(item.progress * 100);
@@ -176,6 +176,16 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <span className="truncate">{item.error}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {item.status === "queued" && (
+          <div className="space-y-1.5">
+            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[11px] font-mono text-muted-foreground">Queued</span>
+              </div>
+            </div>
           </div>
         )}
 
