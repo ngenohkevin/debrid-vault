@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Film, Tv, Trash2, Search } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
@@ -24,7 +24,7 @@ export default function LibraryPage() {
   const [search, setSearch] = useState("");
   const { storage } = useStorage();
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = async () => {
     setLoading(true);
     try {
       const category = tab === "all" ? undefined : tab;
@@ -36,9 +36,10 @@ export default function LibraryPage() {
       toast.error("Failed to load library");
     }
     setLoading(false);
-  }, [tab, search]);
+  };
 
-  useEffect(() => { fetchFiles(); }, [fetchFiles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchFiles(); }, [tab, search]);
 
   const handleDelete = async (file: MediaFile) => {
     try {

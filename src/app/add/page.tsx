@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Magnet, Link2, Download } from "lucide-react";
+import { Magnet, Link2, Download, Cloud } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { RDCloudSheet } from "@/components/downloads/rd-cloud-sheet";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { Category } from "@/lib/types";
@@ -101,13 +100,11 @@ export default function AddPage() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center gap-3">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <Separator className="flex-1" />
-        </div>
+        <Separator />
 
-        <RDCloudSheet />
+        <Button variant="outline" className="w-full" onClick={() => router.push("/cloud")}>
+          <Cloud className="mr-2 h-4 w-4" /> Browse RD Cloud
+        </Button>
       </div>
     </AppShell>
   );

@@ -38,6 +38,13 @@ export interface RDDownload {
   generated: string;
 }
 
+export interface RDTorrentFile {
+  id: number;
+  path: string;
+  bytes: number;
+  selected: number;
+}
+
 export interface RDTorrent {
   id: string;
   filename: string;
@@ -52,6 +59,10 @@ export interface RDTorrent {
   ended: string;
   speed: number;
   seeders: number;
+}
+
+export interface RDTorrentInfo extends RDTorrent {
+  files: RDTorrentFile[];
 }
 
 export interface MediaFile {

@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<RDUser | null>(null);
   const [storage, setStorage] = useState<StorageInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [daysLeft, setDaysLeft] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +34,9 @@ export default function SettingsPage() {
     ]).then(([u, s]) => {
       setUser(u);
       setStorage(s);
+      if (u?.expiration) {
+        setDaysLeft(Math.max(0, Math.floor((new Date(u.expiration).getTime() - Date.now()) / 86400000)));
+      }
       setLoading(false);
     });
   }, []);
@@ -47,10 +51,6 @@ export default function SettingsPage() {
       </AppShell>
     );
   }
-
-  const daysLeft = user?.expiration
-    ? Math.max(0, Math.floor((new Date(user.expiration).getTime() - Date.now()) / 86400000))
-    : 0;
 
   return (
     <AppShell>

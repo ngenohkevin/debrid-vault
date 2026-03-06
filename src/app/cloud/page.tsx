@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X } from "lucide-react";
+import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
@@ -14,9 +15,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 function getFileName(path: string): string {
-  // RD file paths look like "/Trigger.Point.S02E01.720p.mkv" or "Trigger.Point.S02E01.720p.mkv"
-  const name = path.split("/").pop() || path;
-  return name;
+  return path.split("/").pop() || path;
 }
 
 function TorrentCard({
@@ -44,7 +43,6 @@ function TorrentCard({
       setLoadingFiles(true);
       try {
         const info = await api.getRDTorrentInfo(torrent.id);
-        // Only keep selected files (selected === 1) — these match the links array
         const selected = info.files.filter((f) => f.selected === 1);
         setFiles(selected);
       } catch {
@@ -56,7 +54,6 @@ function TorrentCard({
     setExpanded(true);
   };
 
-  // Get file names for toast messages
   const getFileNames = (): string[] => files.map((f) => getFileName(f.path));
 
   return (
@@ -142,7 +139,7 @@ function TorrentCard({
       </div>
 
       {expanded && isMultiFile && (
-        <div className="border-t border-border/40 bg-muted/20 max-h-64 overflow-y-auto">
+        <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
           {loadingFiles && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -181,24 +178,43 @@ function TorrentCard({
   );
 }
 
-export function RDCloudSheet() {
-  const [open, setOpen] = useState(false);
+type FilterType = "all" | "movies" | "tv";
+
+export default function CloudPage() {
   const [torrents, setTorrents] = useState<RDTorrent[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category>("movies");
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
   const router = useRouter();
 
   useEffect(() => {
-    if (open) {
-      setLoading(true);
-      api
-        .getRDTorrents()
-        .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
-        .catch(() => toast.error("Failed to load RD cloud"))
-        .finally(() => setLoading(false));
+    api
+      .getRDTorrents()
+      .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
+      .catch(() => toast.error("Failed to load RD cloud"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(() => {
+    let result = torrents;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((t) => t.filename.toLowerCase().includes(q));
     }
-  }, [open]);
+    if (filter === "movies") {
+      result = result.filter((t) => t.links.length === 1);
+    } else if (filter === "tv") {
+      result = result.filter((t) => t.links.length > 1);
+    }
+    return result;
+  }, [torrents, search, filter]);
+
+  const totalSize = useMemo(
+    () => torrents.reduce((acc, t) => acc + t.bytes, 0),
+    [torrents]
+  );
 
   const handleDownload = async (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => {
     const dlId = linkIndex !== undefined ? `${torrent.id}-${linkIndex}` : torrent.id;
@@ -216,7 +232,6 @@ export function RDCloudSheet() {
         }
         toast.success(`Started all ${torrent.links.length} files from ${torrent.filename}`);
       }
-      setOpen(false);
       router.push("/");
     } catch {
       toast.error("Failed to start download");
@@ -225,64 +240,127 @@ export function RDCloudSheet() {
     }
   };
 
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <Cloud className="mr-2 h-4 w-4" /> Browse RD Cloud
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="bottom" className="h-[85vh] flex flex-col">
-        <SheetHeader className="shrink-0">
-          <SheetTitle>Real-Debrid Cloud</SheetTitle>
-        </SheetHeader>
+  const handleRefresh = () => {
+    setLoading(true);
+    api
+      .getRDTorrents()
+      .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
+      .catch(() => toast.error("Failed to refresh"))
+      .finally(() => setLoading(false));
+  };
 
-        <div className="flex items-center gap-2 my-3 shrink-0">
-          <span className="text-sm text-muted-foreground">Save as:</span>
-          <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="movies">
-                <span className="flex items-center gap-1.5"><Film className="h-3.5 w-3.5" /> Movies</span>
-              </SelectItem>
-              <SelectItem value="tv-shows">
-                <span className="flex items-center gap-1.5"><Tv className="h-3.5 w-3.5" /> TV Shows</span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {!loading && (
-            <Badge variant="secondary" className="ml-auto text-[10px]">
-              {torrents.length} torrents
-            </Badge>
+  return (
+    <AppShell>
+      <div className="p-4 md:p-6 space-y-4 max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold">RD Cloud</h1>
+            {!loading && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {torrents.length} torrents &middot; {formatBytes(totalSize)}
+              </p>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+          </Button>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search torrents..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-10"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="space-y-2 pb-4">
-            {loading &&
-              Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-[72px] w-full rounded-xl" />
-              ))}
-            {!loading &&
-              torrents.map((torrent) => (
-                <TorrentCard
-                  key={torrent.id}
-                  torrent={torrent}
-                  onDownload={handleDownload}
-                  downloading={downloading}
-                />
-              ))}
-            {!loading && torrents.length === 0 && (
-              <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-                <Cloud className="h-8 w-8" />
-                <p className="text-sm">No torrents in your RD cloud</p>
-              </div>
-            )}
+        {/* Filters & Category */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+            {(["all", "movies", "tv"] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 capitalize transition-colors ${
+                  filter === f
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent"
+                }`}
+              >
+                {f === "tv" ? "TV Shows" : f === "movies" ? "Movies" : "All"}
+              </button>
+            ))}
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Save as:</span>
+            <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+              <SelectTrigger className="w-28 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="movies">
+                  <span className="flex items-center gap-1.5"><Film className="h-3 w-3" /> Movies</span>
+                </SelectItem>
+                <SelectItem value="tv-shows">
+                  <span className="flex items-center gap-1.5"><Tv className="h-3 w-3" /> TV Shows</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        {/* Results count */}
+        {!loading && search && (
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+          </p>
+        )}
+
+        {/* Torrent list */}
+        <div className="space-y-2">
+          {loading &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[72px] w-full rounded-xl" />
+            ))}
+          {!loading &&
+            filtered.map((torrent) => (
+              <TorrentCard
+                key={torrent.id}
+                torrent={torrent}
+                onDownload={handleDownload}
+                downloading={downloading}
+              />
+            ))}
+          {!loading && filtered.length === 0 && torrents.length > 0 && (
+            <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+              <Search className="h-8 w-8" />
+              <p className="text-sm">No matching torrents</p>
+              <button onClick={() => { setSearch(""); setFilter("all"); }} className="text-xs text-primary hover:underline">
+                Clear filters
+              </button>
+            </div>
+          )}
+          {!loading && torrents.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+              <Cloud className="h-8 w-8" />
+              <p className="text-sm">No torrents in your RD cloud</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </AppShell>
   );
 }

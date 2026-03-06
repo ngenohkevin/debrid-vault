@@ -24,11 +24,13 @@ export const api = {
       body: JSON.stringify({ source, category }),
     }),
   cancelDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}`, { method: "DELETE" }),
+  removeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/remove`, { method: "DELETE" }),
 
   getRDUser: () => fetchAPI<import("./types").RDUser>("/api/rd/user"),
   getRDDownloads: (limit?: number) =>
     fetchAPI<import("./types").RDDownload[]>(`/api/rd/downloads${limit ? `?limit=${limit}` : ""}`),
   getRDTorrents: () => fetchAPI<import("./types").RDTorrent[]>("/api/rd/torrents"),
+  getRDTorrentInfo: (id: string) => fetchAPI<import("./types").RDTorrentInfo>(`/api/rd/torrents/${id}`),
 
   getLibrary: (category?: string) =>
     fetchAPI<import("./types").MediaFile[]>(`/api/library${category ? `?category=${category}` : ""}`),

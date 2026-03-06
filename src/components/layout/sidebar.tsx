@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Download, Plus, FolderOpen, Settings, Vault } from "lucide-react";
+import { Download, Plus, Cloud, FolderOpen, Settings, Vault } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Downloads", icon: Download },
   { href: "/add", label: "Add Download", icon: Plus },
+  { href: "/cloud", label: "RD Cloud", icon: Cloud },
   { href: "/library", label: "Library", icon: FolderOpen },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
