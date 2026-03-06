@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X, CalendarClock } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScheduleDialog } from "@/components/downloads/schedule-dialog";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -21,10 +22,12 @@ function getFileName(path: string): string {
 function TorrentCard({
   torrent,
   onDownload,
+  onSchedule,
   downloading,
 }: {
   torrent: RDTorrent;
   onDownload: (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => void;
+  onSchedule: (torrent: RDTorrent, linkIndex?: number) => void;
   downloading: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -88,24 +91,39 @@ function TorrentCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {!isMultiFile && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              disabled={isDownloading}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDownload(torrent, getFileNames(), 0);
-              }}
-            >
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-            </Button>
+            <>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                disabled={isDownloading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownload(torrent, getFileNames(), 0);
+                }}
+                title="Download now"
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSchedule(torrent, 0);
+                }}
+                title="Schedule"
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
           {isMultiFile && (
             expanded ? (
@@ -134,19 +152,31 @@ function TorrentCard({
                   <p className="truncate text-foreground">{getFileName(file.path)}</p>
                   <p className="text-[10px] text-muted-foreground">{formatBytes(file.bytes)}</p>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 shrink-0"
-                  disabled={downloading === `${torrent.id}-${i}`}
-                  onClick={() => onDownload(torrent, [getFileName(file.path)], i)}
-                >
-                  {downloading === `${torrent.id}-${i}` ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    disabled={downloading === `${torrent.id}-${i}`}
+                    onClick={() => onDownload(torrent, [getFileName(file.path)], i)}
+                    title="Download now"
+                  >
+                    {downloading === `${torrent.id}-${i}` ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    onClick={() => onSchedule(torrent, i)}
+                    title="Schedule"
+                  >
+                    <CalendarClock className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             ))}
             {!loadingFiles && files.length === 0 && (
@@ -154,11 +184,11 @@ function TorrentCard({
             )}
           </div>
           {!loadingFiles && files.length > 0 && (
-            <div className="border-t border-border/40 px-3.5 py-2.5">
+            <div className="border-t border-border/40 px-3.5 py-2.5 flex gap-2">
               <Button
                 size="sm"
                 variant="secondary"
-                className="w-full h-8 text-xs gap-1.5"
+                className="flex-1 h-8 text-xs gap-1.5"
                 disabled={isDownloading}
                 onClick={() => onDownload(torrent, getFileNames())}
               >
@@ -167,9 +197,18 @@ function TorrentCard({
                 ) : (
                   <>
                     <Download className="h-3.5 w-3.5" />
-                    Download All {files.length} Episodes
+                    Download All
                   </>
                 )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs gap-1.5"
+                onClick={() => onSchedule(torrent)}
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+                Schedule All
               </Button>
             </div>
           )}
@@ -188,6 +227,10 @@ export default function CloudPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleSource, setScheduleSource] = useState("");
+  const [scheduleFolder, setScheduleFolder] = useState<string | undefined>();
+  const [scheduleName, setScheduleName] = useState<string | undefined>();
   const router = useRouter();
 
   useEffect(() => {
@@ -225,14 +268,12 @@ export default function CloudPage() {
 
     try {
       if (linkIndex !== undefined) {
-        // Single episode download
         const link = torrent.links[linkIndex];
         const folder = isMulti ? torrent.filename : undefined;
         await api.startDownload(link, category, folder);
         const name = fileNames[0] || `file ${linkIndex + 1}`;
         toast.success(`Started: ${name}`);
       } else {
-        // Batch download all episodes as a group
         await api.startBatchDownload(torrent.links, torrent.filename, category);
         toast.success(`Started all ${torrent.links.length} episodes`);
       }
@@ -242,6 +283,24 @@ export default function CloudPage() {
     } finally {
       setDownloading(null);
     }
+  };
+
+  const handleSchedule = (torrent: RDTorrent, linkIndex?: number) => {
+    const isMulti = torrent.links.length > 1;
+    if (linkIndex !== undefined) {
+      // Single file/episode
+      setScheduleSource(torrent.links[linkIndex]);
+      setScheduleFolder(isMulti ? torrent.filename : undefined);
+      setScheduleName(torrent.filename + (isMulti ? ` (episode ${linkIndex + 1})` : ""));
+    } else {
+      // All episodes — schedule each link separately
+      // For now, schedule the first link with folder context
+      // TODO: batch scheduling
+      setScheduleSource(torrent.links[0]);
+      setScheduleFolder(torrent.filename);
+      setScheduleName(torrent.filename + ` (${torrent.links.length} episodes)`);
+    }
+    setScheduleOpen(true);
   };
 
   const handleRefresh = () => {
@@ -345,6 +404,7 @@ export default function CloudPage() {
                 key={torrent.id}
                 torrent={torrent}
                 onDownload={handleDownload}
+                onSchedule={handleSchedule}
                 downloading={downloading}
               />
             ))}
@@ -365,6 +425,16 @@ export default function CloudPage() {
           )}
         </div>
       </div>
+
+      <ScheduleDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        source={scheduleSource}
+        category={category}
+        folder={scheduleFolder}
+        name={scheduleName}
+        onScheduled={() => router.push("/schedule")}
+      />
     </AppShell>
   );
 }

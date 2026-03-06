@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DownloadCard } from "@/components/downloads/download-card";
 import { DownloadGroupCard } from "@/components/downloads/download-group-card";
+import { SpeedLimit } from "@/components/downloads/speed-limit";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ function buildEntries(downloads: DownloadItem[]): { active: Entry[]; completed: 
 
   const entries: Entry[] = [];
 
-  // Add groups
   for (const [groupId, items] of groups) {
     entries.push({
       type: "group",
@@ -52,16 +52,15 @@ function buildEntries(downloads: DownloadItem[]): { active: Entry[]; completed: 
     });
   }
 
-  // Add singles
   for (const item of singles) {
     entries.push({ type: "single", item });
   }
 
   const isActive = (e: Entry) => {
     if (e.type === "group") {
-      return e.items.some((i) => ["downloading", "resolving", "pending", "moving"].includes(i.status));
+      return e.items.some((i) => ["downloading", "resolving", "pending", "moving", "paused"].includes(i.status));
     }
-    return ["downloading", "resolving", "pending", "moving"].includes(e.item.status);
+    return ["downloading", "resolving", "pending", "moving", "paused"].includes(e.item.status);
   };
 
   return {
@@ -95,6 +94,11 @@ export default function DownloadsPage() {
         </div>
 
         <StorageCards storage={storage} />
+
+        {/* Speed limit control */}
+        {!loading && activeCount > 0 && (
+          <SpeedLimit compact />
+        )}
 
         {loading && (
           <div className="space-y-2">
