@@ -9,9 +9,25 @@ import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-function EpisodeRow({ item }: { item: DownloadItem }) {
+function EpisodeRow({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
   const percent = Math.round(item.progress * 100);
   const isRetrying = item.status === "downloading" && item.error?.includes("retry");
+
+  const handlePause = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.pauseDownload(item.id);
+      onUpdate();
+    } catch { /* ignore */ }
+  };
+
+  const handleResume = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.resumeDownload(item.id);
+      onUpdate();
+    } catch { /* ignore */ }
+  };
 
   return (
     <div className="flex items-center gap-2 px-3.5 py-2 text-xs border-b border-border/20 last:border-0">
@@ -38,16 +54,28 @@ function EpisodeRow({ item }: { item: DownloadItem }) {
           <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
         )}
       </div>
-      <div className="shrink-0 text-[10px] text-muted-foreground">
-        {item.status === "downloading" && !isRetrying && formatSpeed(item.speed)}
-        {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
-        {item.status === "completed" && formatBytes(item.size)}
-        {item.status === "error" && <span className="text-red-400">failed</span>}
-        {item.status === "queued" && "queued"}
-        {item.status === "pending" && "waiting"}
-        {item.status === "resolving" && "resolving"}
-        {item.status === "moving" && "moving"}
-        {item.status === "paused" && <span className="text-amber-400">paused</span>}
+      <div className="shrink-0 flex items-center gap-1">
+        {(item.status === "downloading" || item.status === "queued") && (
+          <button onClick={handlePause} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Pause">
+            <Pause className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
+        {item.status === "paused" && (
+          <button onClick={handleResume} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Resume">
+            <Play className="h-3 w-3 text-blue-400" />
+          </button>
+        )}
+        <span className="text-[10px] text-muted-foreground min-w-[4rem] text-right">
+          {item.status === "downloading" && !isRetrying && formatSpeed(item.speed)}
+          {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
+          {item.status === "completed" && formatBytes(item.size)}
+          {item.status === "error" && <span className="text-red-400">failed</span>}
+          {item.status === "queued" && "queued"}
+          {item.status === "pending" && "waiting"}
+          {item.status === "resolving" && "resolving"}
+          {item.status === "moving" && "moving"}
+          {item.status === "paused" && <span className="text-amber-400">paused</span>}
+        </span>
       </div>
     </div>
   );
@@ -232,7 +260,7 @@ export function DownloadGroupCard({
       {expanded && (
         <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
           {items.map((item) => (
-            <EpisodeRow key={item.id} item={item} />
+            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} />
           ))}
         </div>
       )}
