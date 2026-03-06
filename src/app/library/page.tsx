@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, Trash2, Search, ArrowRightLeft } from "lucide-react";
+import { Film, Tv, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { MediaFile } from "@/lib/types";
@@ -17,17 +15,19 @@ import { useStorage } from "@/hooks/use-storage";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
+type FilterType = "all" | "movies" | "tv-shows";
+
 export default function LibraryPage() {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("all");
+  const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
   const { storage } = useStorage();
 
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const category = tab === "all" ? undefined : tab;
+      const category = filter === "all" ? undefined : filter;
       const data = search
         ? await api.searchLibrary(search)
         : await api.getLibrary(category);
@@ -39,7 +39,7 @@ export default function LibraryPage() {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchFiles(); }, [tab, search]);
+  useEffect(() => { fetchFiles(); }, [filter, search]);
 
   const handleMove = async (file: MediaFile) => {
     const target = file.category === "movies" ? "tv-shows" : "movies";
@@ -65,84 +65,137 @@ export default function LibraryPage() {
   return (
     <AppShell>
       <div className="p-4 md:p-6 space-y-4 max-w-2xl mx-auto">
-        <h1 className="text-lg font-semibold">Library</h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold">Library</h1>
+            {!loading && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {files.length} file{files.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
+        </div>
 
         <StorageCards storage={storage} />
 
-        <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearch(""); }}>
-          <TabsList className="w-full">
-            <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-            <TabsTrigger value="movies" className="flex-1">Movies</TabsTrigger>
-            <TabsTrigger value="tv-shows" className="flex-1">TV Shows</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
+        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search media..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-10"
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
+
+        {/* Filter */}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+            {(["all", "movies", "tv-shows"] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 capitalize transition-colors ${
+                  filter === f
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent"
+                }`}
+              >
+                {f === "tv-shows" ? "TV Shows" : f === "movies" ? "Movies" : "All"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Results */}
+        {!loading && search && (
+          <p className="text-xs text-muted-foreground">
+            {files.length} result{files.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+          </p>
+        )}
 
         {loading && (
           <div className="space-y-2">
-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-xl" />)}
           </div>
         )}
 
         {!loading && (
           <div className="space-y-2">
             {files.map((file) => (
-              <Card key={file.path}>
-                <CardContent className="p-3 flex items-center gap-3">
-                  {file.category === "movies" ? (
-                    <Film className="h-5 w-5 text-blue-400 shrink-0" />
-                  ) : (
-                    <Tv className="h-5 w-5 text-purple-400 shrink-0" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{file.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px]">{formatBytes(file.size)}</Badge>
-                      <span className="text-[10px] text-muted-foreground">{formatDate(file.modTime)}</span>
+              <div key={file.path} className="rounded-xl border border-border/60 bg-card overflow-hidden">
+                <div className="flex items-start gap-3 p-3.5">
+                  <div className="mt-0.5 shrink-0">
+                    {file.category === "movies" ? (
+                      <Film className="h-4 w-4 text-blue-400" />
+                    ) : (
+                      <Tv className="h-4 w-4 text-purple-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <p className="text-sm font-medium leading-snug line-clamp-2">{file.name}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="secondary" className="text-[10px] font-normal gap-1">
+                        <HardDrive className="h-2.5 w-2.5" />
+                        {formatBytes(file.size)}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDate(file.modTime)}
+                      </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
-                    onClick={() => handleMove(file)}
-                  >
-                    <ArrowRightLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete file?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete &quot;{file.name}&quot;. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(file)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
+                      onClick={() => handleMove(file)}
+                    >
+                      <ArrowRightLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete file?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete &quot;{file.name}&quot;. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(file)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
             ))}
             {files.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-12">No media files found</p>
+              <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+                <FolderOpen className="h-8 w-8" />
+                <p className="text-sm">No media files found</p>
+                {search && (
+                  <button onClick={() => { setSearch(""); setFilter("all"); }} className="text-xs text-primary hover:underline">
+                    Clear filters
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

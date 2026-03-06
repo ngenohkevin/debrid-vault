@@ -71,7 +71,7 @@ function TorrentCard({
         </div>
 
         <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-sm font-medium leading-snug">{torrent.filename}</p>
+          <p className="text-sm font-medium leading-snug line-clamp-2">{torrent.filename}</p>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-[10px] font-normal gap-1">
               <HardDrive className="h-2.5 w-2.5" />

@@ -3,7 +3,7 @@
 import { X, Trash2, RotateCcw, ArrowDown, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Film, Tv } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
 import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -45,16 +45,23 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-3.5 space-y-2">
-        <div className="flex items-start justify-between gap-2">
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+      <div className="p-3.5 space-y-2">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 shrink-0">
+            {item.category === "movies" ? (
+              <Film className="h-4 w-4 text-blue-400" />
+            ) : (
+              <Tv className="h-4 w-4 text-purple-400" />
+            )}
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{item.name}</p>
+            <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={item.category === "movies" ? "default" : "secondary"} className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px] font-normal">
                 {item.category}
               </Badge>
-              <span className={`text-xs capitalize ${getStatusColor(item.status)}`}>{item.status}</span>
+              <span className={`text-[10px] capitalize ${getStatusColor(item.status)}`}>{item.status}</span>
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
@@ -134,7 +141,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
             <span>{formatBytes(item.size)}</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
