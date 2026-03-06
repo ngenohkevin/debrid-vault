@@ -7,7 +7,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleDialog } from "@/components/downloads/schedule-dialog";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
@@ -223,12 +222,12 @@ type FilterType = "all" | "movies" | "tv";
 export default function CloudPage() {
   const [torrents, setTorrents] = useState<RDTorrent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState<Category>("movies");
   const [downloading, setDownloading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleSource, setScheduleSource] = useState("");
+  const [scheduleCategory, setScheduleCategory] = useState<Category>("movies");
   const [scheduleFolder, setScheduleFolder] = useState<string | undefined>();
   const [scheduleName, setScheduleName] = useState<string | undefined>();
   const router = useRouter();
@@ -265,6 +264,7 @@ export default function CloudPage() {
     setDownloading(dlId);
 
     const isMulti = torrent.links.length > 1;
+    const category: Category = isMulti ? "tv-shows" : "movies";
 
     try {
       if (linkIndex !== undefined) {
@@ -287,15 +287,12 @@ export default function CloudPage() {
 
   const handleSchedule = (torrent: RDTorrent, linkIndex?: number) => {
     const isMulti = torrent.links.length > 1;
+    setScheduleCategory(isMulti ? "tv-shows" : "movies");
     if (linkIndex !== undefined) {
-      // Single file/episode
       setScheduleSource(torrent.links[linkIndex]);
       setScheduleFolder(isMulti ? torrent.filename : undefined);
       setScheduleName(torrent.filename + (isMulti ? ` (episode ${linkIndex + 1})` : ""));
     } else {
-      // All episodes — schedule each link separately
-      // For now, schedule the first link with folder context
-      // TODO: batch scheduling
       setScheduleSource(torrent.links[0]);
       setScheduleFolder(torrent.filename);
       setScheduleName(torrent.filename + ` (${torrent.links.length} episodes)`);
@@ -367,22 +364,6 @@ export default function CloudPage() {
             ))}
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Save as:</span>
-            <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
-              <SelectTrigger className="w-28 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="movies">
-                  <span className="flex items-center gap-1.5"><Film className="h-3 w-3" /> Movies</span>
-                </SelectItem>
-                <SelectItem value="tv-shows">
-                  <span className="flex items-center gap-1.5"><Tv className="h-3 w-3" /> TV Shows</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Results count */}
@@ -430,7 +411,7 @@ export default function CloudPage() {
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
         source={scheduleSource}
-        category={category}
+        category={scheduleCategory}
         folder={scheduleFolder}
         name={scheduleName}
         onScheduled={() => router.push("/schedule")}
