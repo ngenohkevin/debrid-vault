@@ -35,6 +35,7 @@ export const api = {
   getRDDownloads: (limit?: number) =>
     fetchAPI<import("./types").RDDownload[]>(`/api/rd/downloads${limit ? `?limit=${limit}` : ""}`),
   getRDTorrents: () => fetchAPI<import("./types").RDTorrent[]>("/api/rd/torrents"),
+  invalidateRDCache: () => fetchAPI<void>("/api/rd/cache/invalidate", { method: "POST" }),
   getRDTorrentInfo: (id: string) => fetchAPI<import("./types").RDTorrentInfo>(`/api/rd/torrents/${id}`),
 
   getLibrary: (category?: string) =>

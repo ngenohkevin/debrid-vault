@@ -246,8 +246,8 @@ export default function CloudPage() {
 
   const handleRefresh = () => {
     setLoading(true);
-    api
-      .getRDTorrents()
+    api.invalidateRDCache()
+      .then(() => api.getRDTorrents())
       .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
       .catch(() => toast.error("Failed to refresh"))
       .finally(() => setLoading(false));
