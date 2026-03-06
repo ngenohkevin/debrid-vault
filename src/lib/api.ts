@@ -6,8 +6,17 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...options?.headers },
   });
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || `API error: ${res.status}`);
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const body = await res.json();
+      throw new Error(body?.error || `API error: ${res.status}`);
+    }
+    // Non-JSON error (e.g. Cloudflare 502 HTML page) — don't leak raw HTML
+    throw new Error(`Backend unavailable (${res.status})`);
+  }
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(`Backend unavailable (${res.status})`);
   }
   return res.json();
 }
