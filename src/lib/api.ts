@@ -28,6 +28,7 @@ export const api = {
   getRDUser: () => fetchAPI<import("./types").RDUser>("/api/rd/user"),
   getRDDownloads: (limit?: number) =>
     fetchAPI<import("./types").RDDownload[]>(`/api/rd/downloads${limit ? `?limit=${limit}` : ""}`),
+  getRDTorrents: () => fetchAPI<import("./types").RDTorrent[]>("/api/rd/torrents"),
 
   getLibrary: (category?: string) =>
     fetchAPI<import("./types").MediaFile[]>(`/api/library${category ? `?category=${category}` : ""}`),

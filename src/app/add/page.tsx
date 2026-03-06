@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Magnet, Link2, Download } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function AddPage() {
   const [source, setSource] = useState("");
   const [category, setCategory] = useState<Category>("movies");
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const type = source.trim() ? detectType(source.trim()) : null;
 
@@ -37,6 +39,7 @@ export default function AddPage() {
       await api.startDownload(source.trim(), category);
       toast.success("Download started!");
       setSource("");
+      router.push("/");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to start download");
     } finally {
