@@ -30,6 +30,8 @@ export const api = {
     }),
   cancelDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}`, { method: "DELETE" }),
   removeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/remove`, { method: "DELETE" }),
+  pauseDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/pause`, { method: "POST" }),
+  resumeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/resume`, { method: "POST" }),
 
   getRDUser: () => fetchAPI<import("./types").RDUser>("/api/rd/user"),
   getRDDownloads: (limit?: number) =>
@@ -49,6 +51,22 @@ export const api = {
     }),
   deleteMedia: (path: string) =>
     fetchAPI<void>(`/api/library/${encodeURIComponent(path)}`, { method: "DELETE" }),
+
+  getSchedules: () => fetchAPI<import("./types").ScheduledDownload[]>("/api/schedules"),
+  createSchedule: (source: string, category: import("./types").Category, scheduledAt: string, speedLimitMbps: number, folder?: string) =>
+    fetchAPI<import("./types").ScheduledDownload>("/api/schedules", {
+      method: "POST",
+      body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}) }),
+    }),
+  cancelSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}`, { method: "DELETE" }),
+  removeSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}/remove`, { method: "DELETE" }),
+
+  getSettings: () => fetchAPI<import("./types").EngineSettings>("/api/settings"),
+  updateSettings: (settings: Partial<import("./types").EngineSettings>) =>
+    fetchAPI<import("./types").EngineSettings>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
 
   getEventsURL: () => `${API_BASE}/api/downloads/events`,
 };

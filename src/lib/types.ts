@@ -1,4 +1,4 @@
-export type DownloadStatus = "pending" | "resolving" | "downloading" | "moving" | "completed" | "error" | "cancelled";
+export type DownloadStatus = "pending" | "resolving" | "downloading" | "moving" | "paused" | "completed" | "error" | "cancelled";
 export type Category = "movies" | "tv-shows";
 
 export interface DownloadItem {
@@ -94,4 +94,26 @@ export interface SystemStatus {
   activeDownloads: number;
   totalDownloads: number;
   rdUser: RDUser | null;
+}
+
+export interface EngineSettings {
+  maxConcurrentDownloads: number;
+  maxSegmentsPerFile: number;
+  speedLimitMbps: number;
+}
+
+export type ScheduleStatus = "scheduled" | "running" | "completed" | "cancelled" | "error";
+
+export interface ScheduledDownload {
+  id: string;
+  source: string;
+  category: Category;
+  folder?: string;
+  scheduledAt: string;
+  speedLimitMbps: number;
+  status: ScheduleStatus;
+  error?: string;
+  downloadId?: string;
+  createdAt: string;
+  completedAt?: string;
 }

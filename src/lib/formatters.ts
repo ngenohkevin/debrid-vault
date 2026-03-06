@@ -33,6 +33,7 @@ export function getStatusColor(status: string): string {
     resolving: "text-yellow-400",
     pending: "text-yellow-400",
     moving: "text-purple-400",
+    paused: "text-amber-400",
     cancelled: "text-muted-foreground",
   };
   return colors[status] || "text-muted-foreground";

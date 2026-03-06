@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, AlertCircle, Loader2 } from "lucide-react";
+import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, AlertCircle, Loader2, Pause, Play, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DownloadItem } from "@/lib/types";
@@ -11,31 +11,41 @@ import { toast } from "sonner";
 
 function EpisodeRow({ item }: { item: DownloadItem }) {
   const percent = Math.round(item.progress * 100);
+  const isRetrying = item.status === "downloading" && item.error?.includes("retry");
 
   return (
     <div className="flex items-center gap-2 px-3.5 py-2 text-xs border-b border-border/20 last:border-0">
       <div className="w-5 shrink-0 flex justify-center">
         {item.status === "completed" && <Check className="h-3.5 w-3.5 text-green-400" />}
-        {item.status === "downloading" && (
+        {item.status === "downloading" && !isRetrying && (
           <span className="text-[10px] font-mono text-blue-400">{percent}%</span>
+        )}
+        {item.status === "downloading" && isRetrying && (
+          <RefreshCw className="h-3 w-3 animate-spin text-amber-400" />
         )}
         {item.status === "error" && <AlertCircle className="h-3.5 w-3.5 text-red-400" />}
         {item.status === "resolving" && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
         {item.status === "moving" && <Loader2 className="h-3 w-3 animate-spin text-purple-400" />}
+        {item.status === "paused" && <Pause className="h-3 w-3 text-amber-400" />}
         {(item.status === "pending" || item.status === "cancelled") && (
           <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-foreground">{item.name}</p>
+        {isRetrying && (
+          <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
+        )}
       </div>
       <div className="shrink-0 text-[10px] text-muted-foreground">
-        {item.status === "downloading" && formatSpeed(item.speed)}
+        {item.status === "downloading" && !isRetrying && formatSpeed(item.speed)}
+        {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
         {item.status === "completed" && formatBytes(item.size)}
         {item.status === "error" && <span className="text-red-400">failed</span>}
         {item.status === "pending" && "waiting"}
         {item.status === "resolving" && "resolving"}
         {item.status === "moving" && "moving"}
+        {item.status === "paused" && <span className="text-amber-400">paused</span>}
       </div>
     </div>
   );
@@ -64,9 +74,39 @@ export function DownloadGroupCard({
   const isAllDone = items.every((i) => ["completed", "error", "cancelled"].includes(i.status));
   const isAllCompleted = items.every((i) => i.status === "completed");
   const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving"].includes(i.status));
+  const hasDownloading = items.some((i) => i.status === "downloading");
+  const hasPaused = items.some((i) => i.status === "paused");
 
   // ETA: use the max ETA from active downloads
   const maxETA = items.reduce((max, i) => Math.max(max, i.eta), 0);
+
+  const handlePauseAll = async () => {
+    try {
+      for (const item of items) {
+        if (item.status === "downloading") {
+          await api.pauseDownload(item.id);
+        }
+      }
+      toast.success("Paused all episodes");
+      onUpdate();
+    } catch {
+      toast.error("Failed to pause");
+    }
+  };
+
+  const handleResumeAll = async () => {
+    try {
+      for (const item of items) {
+        if (item.status === "paused") {
+          await api.resumeDownload(item.id);
+        }
+      }
+      toast.success("Resumed all episodes");
+      onUpdate();
+    } catch {
+      toast.error("Failed to resume");
+    }
+  };
 
   const handleCancelAll = async () => {
     try {
@@ -122,6 +162,16 @@ export function DownloadGroupCard({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
+          {hasDownloading && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handlePauseAll(); }} title="Pause all">
+              <Pause className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {hasPaused && !hasDownloading && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={(e) => { e.stopPropagation(); handleResumeAll(); }} title="Resume all">
+              <Play className="h-3.5 w-3.5" />
+            </Button>
+          )}
           {hasActive && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCancelAll(); }} title="Cancel all">
               <X className="h-4 w-4" />

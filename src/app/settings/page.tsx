@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Crown, HardDrive, LogOut } from "lucide-react";
+import { User, Crown, HardDrive, LogOut, Gauge, X } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { RDUser, StorageInfo } from "@/lib/types";
+import type { RDUser, StorageInfo, EngineSettings } from "@/lib/types";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { formatBytes } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -24,6 +26,7 @@ export default function SettingsPage() {
 
   const [user, setUser] = useState<RDUser | null>(null);
   const [storage, setStorage] = useState<StorageInfo | null>(null);
+  const [settings, setSettings] = useState<EngineSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [daysLeft, setDaysLeft] = useState(0);
 
@@ -31,15 +34,27 @@ export default function SettingsPage() {
     Promise.all([
       api.getRDUser().catch(() => null),
       api.getStorage().catch(() => null),
-    ]).then(([u, s]) => {
+      api.getSettings().catch(() => null),
+    ]).then(([u, s, eng]) => {
       setUser(u);
       setStorage(s);
+      setSettings(eng);
       if (u?.expiration) {
         setDaysLeft(Math.max(0, Math.floor((new Date(u.expiration).getTime() - Date.now()) / 86400000)));
       }
       setLoading(false);
     });
   }, []);
+
+  const updateSpeedLimit = async (mbps: number) => {
+    try {
+      const updated = await api.updateSettings({ speedLimitMbps: mbps });
+      setSettings(updated);
+      toast.success(mbps === 0 ? "Speed limit removed" : `Speed limit set to ${mbps} Mbps`);
+    } catch {
+      toast.error("Failed to update settings");
+    }
+  };
 
   if (loading) {
     return (
@@ -113,6 +128,62 @@ export default function SettingsPage() {
               </>
             ) : (
               <p className="text-sm text-muted-foreground">Storage info unavailable</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Gauge className="h-4 w-4" /> Download Engine
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {settings ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Speed Limit</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={settings.speedLimitMbps}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setSettings({ ...settings, speedLimitMbps: val });
+                        }}
+                        onBlur={(e) => updateSpeedLimit(parseFloat(e.target.value) || 0)}
+                        className="w-20 h-8 text-sm text-right"
+                      />
+                      <span className="text-sm text-muted-foreground">Mbps</span>
+                      {settings.speedLimitMbps > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                          onClick={() => updateSpeedLimit(0)}
+                          title="Remove limit"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">0 = unlimited. Shared across all downloads.</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Max Concurrent</span>
+                  <span className="text-sm font-medium">{settings.maxConcurrentDownloads}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Max Segments/File</span>
+                  <span className="text-sm font-medium">{settings.maxSegmentsPerFile}</span>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Settings unavailable</p>
             )}
           </CardContent>
         </Card>

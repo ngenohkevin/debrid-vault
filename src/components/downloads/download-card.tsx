@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Trash2, RotateCcw, ArrowDown, Check } from "lucide-react";
+import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Film, Tv } from "lucide-react";
@@ -12,7 +12,13 @@ import { toast } from "sonner";
 export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
   const isActive = ["downloading", "resolving", "pending", "moving"].includes(item.status);
   const isDone = ["completed", "error", "cancelled"].includes(item.status);
+  const isPaused = item.status === "paused";
   const percent = Math.round(item.progress * 100);
+
+  // Engine status hint — shown during downloading when retrying/recovering
+  const hasStatusHint = item.status === "downloading" && item.error;
+  const isRetrying = hasStatusHint && (item.error?.includes("retry") || item.error?.includes("Retrying"));
+  const isRecovered = hasStatusHint && item.error?.includes("recovered");
 
   const handleCancel = async () => {
     try {
@@ -30,6 +36,26 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
       onUpdate();
     } catch {
       toast.error("Failed to remove");
+    }
+  };
+
+  const handlePause = async () => {
+    try {
+      await api.pauseDownload(item.id);
+      toast.success("Download paused");
+      onUpdate();
+    } catch {
+      toast.error("Failed to pause");
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      await api.resumeDownload(item.id);
+      toast.success("Download resumed");
+      onUpdate();
+    } catch {
+      toast.error("Failed to resume");
     }
   };
 
@@ -65,6 +91,16 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {item.status === "downloading" && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePause} title="Pause">
+                <Pause className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {isPaused && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={handleResume} title="Resume">
+                <Play className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {item.status === "error" && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRetry} title="Retry">
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -75,7 +111,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <X className="h-4 w-4" />
               </Button>
             )}
-            {isDone && (
+            {(isDone || isPaused) && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={handleRemove} title="Remove">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -85,10 +121,12 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
 
         {item.status === "downloading" && (
           <div className="space-y-1.5">
-            {/* Torrent-style progress bar */}
+            {/* Progress bar — amber when retrying, blue normally */}
             <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 rounded bg-blue-500/80 transition-all duration-300 ease-linear"
+                className={`absolute inset-y-0 left-0 rounded transition-all duration-300 ease-linear ${
+                  isRetrying ? "bg-amber-500/70" : "bg-blue-500/80"
+                }`}
                 style={{ width: `${percent}%` }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -106,6 +144,21 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
               </span>
               <span>{formatETA(item.eta)}</span>
             </div>
+            {/* Engine status hint (retries, recovery, errors) */}
+            {hasStatusHint && (
+              <div className={`flex items-center gap-1.5 text-[10px] ${
+                isRecovered ? "text-green-400" : isRetrying ? "text-amber-400" : "text-muted-foreground"
+              }`}>
+                {isRetrying ? (
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                ) : isRecovered ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <AlertTriangle className="h-3 w-3" />
+                )}
+                <span className="truncate">{item.error}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -123,10 +176,41 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
         {item.status === "moving" && (
           <div className="space-y-1.5">
             <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-              <div className="absolute inset-0 bg-purple-500/30 animate-pulse rounded" />
+              <div
+                className="absolute inset-y-0 left-0 rounded bg-purple-500/60 transition-all duration-300 ease-linear"
+                style={{ width: `${percent}%` }}
+              />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono text-purple-400">Moving to {item.category}...</span>
+                <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                  {item.progress > 0 ? `${percent}% · Moving` : `Moving to ${item.category}...`}
+                </span>
               </div>
+            </div>
+            {item.progress > 0 && (
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
+                <span className="text-purple-400">Moving to {item.category}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isPaused && (
+          <div className="space-y-1.5">
+            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded bg-amber-500/60"
+                style={{ width: `${percent}%` }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                  {percent}% &middot; Paused
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
+              <span className="text-amber-400">Paused</span>
             </div>
           </div>
         )}

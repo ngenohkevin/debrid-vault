@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Magnet, Link2, Download, Cloud } from "lucide-react";
+import { Magnet, Link2, Download, Cloud, Clock, CalendarClock } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,23 @@ function detectType(source: string): "magnet" | "rd-link" | "url" | null {
   return null;
 }
 
+function toLocalDatetime(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export default function AddPage() {
   const [source, setSource] = useState("");
   const [category, setCategory] = useState<Category>("movies");
   const [submitting, setSubmitting] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const tomorrow4am = new Date();
+    tomorrow4am.setDate(tomorrow4am.getDate() + 1);
+    tomorrow4am.setHours(4, 0, 0, 0);
+    return toLocalDatetime(tomorrow4am);
+  });
+  const [speedLimit, setSpeedLimit] = useState(0);
   const router = useRouter();
 
   const type = source.trim() ? detectType(source.trim()) : null;
@@ -35,12 +48,20 @@ export default function AddPage() {
     }
     setSubmitting(true);
     try {
-      await api.startDownload(source.trim(), category);
-      toast.success("Download started!");
-      setSource("");
-      router.push("/");
+      if (scheduled) {
+        const scheduledAt = new Date(scheduleDate).toISOString();
+        await api.createSchedule(source.trim(), category, scheduledAt, speedLimit);
+        toast.success("Download scheduled!");
+        setSource("");
+        router.push("/schedule");
+      } else {
+        await api.startDownload(source.trim(), category);
+        toast.success("Download started!");
+        setSource("");
+        router.push("/");
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start download");
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setSubmitting(false);
     }
@@ -90,21 +111,71 @@ export default function AddPage() {
               </div>
             </div>
 
+            {/* Schedule toggle */}
+            <div
+              className="flex items-center gap-2 cursor-pointer select-none"
+              onClick={() => setScheduled(!scheduled)}
+            >
+              <div className={`h-5 w-9 rounded-full transition-colors relative ${scheduled ? "bg-primary" : "bg-muted"}`}>
+                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${scheduled ? "translate-x-4" : "translate-x-0.5"}`} />
+              </div>
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Schedule for later</span>
+            </div>
+
+            {scheduled && (
+              <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Date & Time</label>
+                  <Input
+                    type="datetime-local"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="h-10 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Speed Limit (Mbps)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={speedLimit}
+                    onChange={(e) => setSpeedLimit(parseFloat(e.target.value) || 0)}
+                    placeholder="0 = unlimited"
+                    className="h-10 text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground">0 = unlimited. Sets global speed limit while this download runs.</p>
+                </div>
+              </div>
+            )}
+
             <Button
               className="w-full h-12"
               disabled={!source.trim() || !type || submitting}
               onClick={handleSubmit}
             >
-              {submitting ? "Starting..." : "Download"}
+              {submitting ? (scheduled ? "Scheduling..." : "Starting...") : (
+                scheduled ? (
+                  <><CalendarClock className="mr-2 h-4 w-4" /> Schedule Download</>
+                ) : (
+                  "Download"
+                )
+              )}
             </Button>
           </CardContent>
         </Card>
 
         <Separator />
 
-        <Button variant="outline" className="w-full" onClick={() => router.push("/cloud")}>
-          <Cloud className="mr-2 h-4 w-4" /> Browse RD Cloud
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="w-full" onClick={() => router.push("/cloud")}>
+            <Cloud className="mr-2 h-4 w-4" /> RD Cloud
+          </Button>
+          <Button variant="outline" className="w-full" onClick={() => router.push("/schedule")}>
+            <CalendarClock className="mr-2 h-4 w-4" /> Schedules
+          </Button>
+        </div>
       </div>
     </AppShell>
   );
