@@ -36,6 +36,11 @@ export const api = {
     fetchAPI<import("./types").MediaFile[]>(`/api/library${category ? `?category=${category}` : ""}`),
   searchLibrary: (query: string) =>
     fetchAPI<import("./types").MediaFile[]>(`/api/library/search?q=${encodeURIComponent(query)}`),
+  moveMedia: (path: string, category: import("./types").Category) =>
+    fetchAPI<{ status: string; newPath: string }>("/api/library/move", {
+      method: "POST",
+      body: JSON.stringify({ path, category }),
+    }),
   deleteMedia: (path: string) =>
     fetchAPI<void>(`/api/library/${encodeURIComponent(path)}`, { method: "DELETE" }),
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, Trash2, Search } from "lucide-react";
+import { Film, Tv, Trash2, Search, ArrowRightLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,17 @@ export default function LibraryPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchFiles(); }, [tab, search]);
+
+  const handleMove = async (file: MediaFile) => {
+    const target = file.category === "movies" ? "tv-shows" : "movies";
+    try {
+      await api.moveMedia(file.path, target);
+      toast.success(`Moved to ${target}`);
+      fetchFiles();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to move");
+    }
+  };
 
   const handleDelete = async (file: MediaFile) => {
     try {
@@ -99,6 +110,15 @@ export default function LibraryPage() {
                       <span className="text-[10px] text-muted-foreground">{formatDate(file.modTime)}</span>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
+                    onClick={() => handleMove(file)}
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive">
