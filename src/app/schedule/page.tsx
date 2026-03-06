@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CalendarClock, X, Trash2, Clock, Gauge, Check, AlertCircle, Loader2, Plus } from "lucide-react";
+import { CalendarClock, X, Trash2, Clock, Gauge, Check, AlertCircle, Loader2, Plus, Pencil, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -40,9 +41,21 @@ function getScheduleStatusColor(status: string): string {
   return colors[status] || "text-muted-foreground";
 }
 
+function toLocalDatetime(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onUpdate: () => void }) {
   const isPending = schedule.status === "scheduled";
+  const isError = schedule.status === "error";
   const isDone = ["completed", "cancelled", "error"].includes(schedule.status);
+  const canEdit = isPending || isError;
+
+  const [editing, setEditing] = useState(false);
+  const [editDate, setEditDate] = useState(() => toLocalDatetime(new Date(schedule.scheduledAt)));
+  const [editSpeed, setEditSpeed] = useState(schedule.speedLimitMbps);
+  const [saving, setSaving] = useState(false);
 
   const handleCancel = async () => {
     try {
@@ -63,7 +76,31 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
     }
   };
 
-  // Show name if available, otherwise truncate source
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const scheduledAt = new Date(editDate).toISOString();
+      await api.updateSchedule(schedule.id, { scheduledAt, speedLimitMbps: editSpeed });
+      toast.success(isError ? "Rescheduled!" : "Schedule updated");
+      setEditing(false);
+      onUpdate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReschedule = () => {
+    // Set default to tomorrow 4am for reschedule
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(4, 0, 0, 0);
+    setEditDate(toLocalDatetime(tomorrow));
+    setEditSpeed(schedule.speedLimitMbps);
+    setEditing(true);
+  };
+
   const displayName = schedule.name || (schedule.source.length > 60
     ? schedule.source.slice(0, 57) + "..."
     : schedule.source);
@@ -91,12 +128,22 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            {isPending && (
+            {isPending && !editing && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => { setEditDate(toLocalDatetime(new Date(schedule.scheduledAt))); setEditSpeed(schedule.speedLimitMbps); setEditing(true); }} title="Edit">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {isError && !editing && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={handleReschedule} title="Reschedule">
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {isPending && !editing && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancel} title="Cancel">
                 <X className="h-4 w-4" />
               </Button>
             )}
-            {isDone && (
+            {isDone && !editing && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={handleRemove} title="Remove">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -104,26 +151,63 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <CalendarClock className="h-3 w-3" />
-            {formatScheduleDate(schedule.scheduledAt)}
-          </span>
-          {schedule.speedLimitMbps > 0 && (
-            <span className="flex items-center gap-1">
-              <Gauge className="h-3 w-3" />
-              {schedule.speedLimitMbps} Mbps
-            </span>
-          )}
-          {schedule.speedLimitMbps === 0 && (
-            <span className="flex items-center gap-1">
-              <Gauge className="h-3 w-3" />
-              Unlimited
-            </span>
-          )}
-        </div>
+        {/* Edit form */}
+        {editing && canEdit && (
+          <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground">Date & Time</label>
+              <Input
+                type="datetime-local"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground">Speed Limit (Mbps)</label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={editSpeed}
+                onChange={(e) => setEditSpeed(parseFloat(e.target.value) || 0)}
+                placeholder="0 = unlimited"
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 h-8 text-xs" disabled={saving} onClick={handleSave}>
+                {saving ? "Saving..." : isError ? "Reschedule" : "Save"}
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {schedule.error && (
+        {!editing && (
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <CalendarClock className="h-3 w-3" />
+              {formatScheduleDate(schedule.scheduledAt)}
+            </span>
+            {schedule.speedLimitMbps > 0 && (
+              <span className="flex items-center gap-1">
+                <Gauge className="h-3 w-3" />
+                {schedule.speedLimitMbps} Mbps
+              </span>
+            )}
+            {schedule.speedLimitMbps === 0 && (
+              <span className="flex items-center gap-1">
+                <Gauge className="h-3 w-3" />
+                Unlimited
+              </span>
+            )}
+          </div>
+        )}
+
+        {!editing && schedule.error && (
           <p className="text-xs text-red-400 break-all">{schedule.error}</p>
         )}
       </CardContent>

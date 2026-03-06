@@ -58,6 +58,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}), ...(name ? { name } : {}) }),
     }),
+  updateSchedule: (id: string, updates: { scheduledAt?: string; speedLimitMbps?: number }) =>
+    fetchAPI<import("./types").ScheduledDownload>(`/api/schedules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }),
   cancelSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}`, { method: "DELETE" }),
   removeSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}/remove`, { method: "DELETE" }),
 
