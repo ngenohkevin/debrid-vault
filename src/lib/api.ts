@@ -41,6 +41,7 @@ export const api = {
   removeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/remove`, { method: "DELETE" }),
   pauseDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/pause`, { method: "POST" }),
   resumeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/resume`, { method: "POST" }),
+  retryMove: (id: string) => fetchAPI<void>(`/api/downloads/${id}/retry-move`, { method: "POST" }),
 
   getRDUser: () => fetchAPI<import("./types").RDUser>("/api/rd/user"),
   getRDDownloads: (limit?: number) =>

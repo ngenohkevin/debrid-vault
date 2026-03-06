@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw } from "lucide-react";
+import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Film, Tv } from "lucide-react";
@@ -70,6 +70,18 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
     }
   };
 
+  const handleRetryMove = async () => {
+    try {
+      await api.retryMove(item.id);
+      toast.success("Retrying move to library");
+      onUpdate();
+    } catch {
+      toast.error("Failed to retry move");
+    }
+  };
+
+  const canRetryMove = item.status === "error" && item.error?.includes("staging");
+
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="p-3.5 space-y-2">
@@ -101,7 +113,12 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <Play className="h-3.5 w-3.5" />
               </Button>
             )}
-            {(item.status === "error" || item.status === "cancelled") && (
+            {canRetryMove && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-400" onClick={handleRetryMove} title="Retry move to library">
+                <HardDrive className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {(item.status === "error" || item.status === "cancelled") && !canRetryMove && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRetry} title="Retry">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
