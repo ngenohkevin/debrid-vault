@@ -87,6 +87,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return proxyRequest(request, context);
 }
 
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return proxyRequest(request, context);
+}
+
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return proxyRequest(request, context);
 }
