@@ -9,7 +9,7 @@ import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-function EpisodeRow({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
+function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number }) {
   const percent = Math.round(item.progress * 100);
   const isRetrying = item.status === "downloading" && item.error?.includes("retry");
 
@@ -60,7 +60,7 @@ function EpisodeRow({ item, onUpdate }: { item: DownloadItem; onUpdate: () => vo
             <Pause className="h-3 w-3 text-muted-foreground" />
           </button>
         )}
-        {item.status === "paused" && (
+        {item.status === "paused" && slotsAvailable > 0 && (
           <button onClick={handleResume} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Resume">
             <Play className="h-3 w-3 text-blue-400" />
           </button>
@@ -85,11 +85,13 @@ export function DownloadGroupCard({
   groupName,
   items,
   onUpdate,
+  slotsAvailable = 1,
 }: {
   groupId: string;
   groupName: string;
   items: DownloadItem[];
   onUpdate: () => void;
+  slotsAvailable?: number;
 }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -197,7 +199,7 @@ export function DownloadGroupCard({
               <Pause className="h-3.5 w-3.5" />
             </Button>
           )}
-          {hasPaused && !hasDownloading && (
+          {hasPaused && !hasDownloading && slotsAvailable > 0 && (
             <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={(e) => { e.stopPropagation(); handleResumeAll(); }} title="Resume all">
               <Play className="h-3.5 w-3.5" />
             </Button>
@@ -260,7 +262,7 @@ export function DownloadGroupCard({
       {expanded && (
         <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
           {items.map((item) => (
-            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} />
+            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} slotsAvailable={slotsAvailable} />
           ))}
         </div>
       )}

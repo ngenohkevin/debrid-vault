@@ -9,7 +9,7 @@ import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/forma
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
+export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
   const isDone = ["completed", "error", "cancelled"].includes(item.status);
   const isPaused = item.status === "paused";
@@ -108,7 +108,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <Pause className="h-3.5 w-3.5" />
               </Button>
             )}
-            {isPaused && (
+            {isPaused && slotsAvailable > 0 && (
               <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={handleResume} title="Resume">
                 <Play className="h-3.5 w-3.5" />
               </Button>

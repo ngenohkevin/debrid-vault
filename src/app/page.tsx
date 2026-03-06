@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DownloadCard } from "@/components/downloads/download-card";
 import { DownloadGroupCard } from "@/components/downloads/download-group-card";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/hooks/use-downloads";
 import { useStorage } from "@/hooks/use-storage";
+import { api } from "@/lib/api";
 import { WifiOff, Download, Loader2 } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
 
@@ -72,9 +73,15 @@ function buildEntries(downloads: DownloadItem[]): { active: Entry[]; completed: 
 export default function DownloadsPage() {
   const { downloads, loading, error, refresh } = useDownloads();
   const { storage } = useStorage();
+  const [maxConcurrent, setMaxConcurrent] = useState(4);
+
+  useEffect(() => {
+    api.getSettings().then((s) => setMaxConcurrent(s.maxConcurrentDownloads)).catch(() => {});
+  }, []);
 
   const { active, completed } = useMemo(() => buildEntries(downloads), [downloads]);
   const activeCount = active.reduce((n, e) => n + (e.type === "group" ? e.items.length : 1), 0);
+  const downloadingCount = downloads.filter((d) => d.status === "downloading" || d.status === "queued" || d.status === "resolving").length;
 
   return (
     <AppShell>
@@ -127,9 +134,10 @@ export default function DownloadsPage() {
                       groupName={entry.groupName}
                       items={entry.items}
                       onUpdate={refresh}
+                      slotsAvailable={maxConcurrent - downloadingCount}
                     />
                   ) : (
-                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} />
+                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} slotsAvailable={maxConcurrent - downloadingCount} />
                   )
                 )}
               </section>
@@ -146,9 +154,10 @@ export default function DownloadsPage() {
                       groupName={entry.groupName}
                       items={entry.items}
                       onUpdate={refresh}
+                      slotsAvailable={maxConcurrent - downloadingCount}
                     />
                   ) : (
-                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} />
+                    <DownloadCard key={entry.item.id} item={entry.item} onUpdate={refresh} slotsAvailable={maxConcurrent - downloadingCount} />
                   )
                 )}
               </section>
