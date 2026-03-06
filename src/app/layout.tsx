@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-svh bg-background text-foreground`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-svh bg-background text-foreground overflow-x-hidden`}>
         {children}
         <Toaster position="top-right" />
         <ServiceWorkerRegistrar />

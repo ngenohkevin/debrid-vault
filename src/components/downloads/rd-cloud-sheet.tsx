@@ -222,7 +222,7 @@ export function RDCloudSheet() {
           )}
         </div>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1">
           <div className="space-y-2 pb-4">
             {loading &&
               Array.from({ length: 5 }).map((_, i) => (

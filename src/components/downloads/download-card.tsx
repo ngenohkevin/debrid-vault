@@ -34,7 +34,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
                 <TooltipTrigger asChild>
                   <p className="text-sm font-medium truncate">{item.name}</p>
                 </TooltipTrigger>
-                <TooltipContent><p className="max-w-xs break-all">{item.name}</p></TooltipContent>
+                <TooltipContent><p className="max-w-[280px] break-all text-xs">{item.name}</p></TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <div className="flex items-center gap-2 mt-1">
@@ -77,7 +77,7 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
         )}
 
         {item.status === "error" && item.error && (
-          <p className="text-xs text-red-400">{item.error}</p>
+          <p className="text-xs text-red-400 break-all">{item.error}</p>
         )}
 
         {item.status === "completed" && (
