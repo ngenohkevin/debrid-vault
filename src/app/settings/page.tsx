@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Crown, HardDrive } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { User, Crown, HardDrive, LogOut } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,18 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RDUser, StorageInfo } from "@/lib/types";
 import { formatBytes } from "@/lib/formatters";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 
 export default function SettingsPage() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
+
   const [user, setUser] = useState<RDUser | null>(null);
   const [storage, setStorage] = useState<StorageInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,6 +136,10 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Button variant="destructive" className="w-full" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" /> Sign Out
+        </Button>
       </div>
     </AppShell>
   );
