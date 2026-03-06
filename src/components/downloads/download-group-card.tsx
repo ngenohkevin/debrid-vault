@@ -55,7 +55,7 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         )}
       </div>
       <div className="shrink-0 flex items-center gap-1">
-        {(item.status === "downloading" || item.status === "queued") && (
+        {item.status === "downloading" && (
           <button onClick={handlePause} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Pause">
             <Pause className="h-3 w-3 text-muted-foreground" />
           </button>
