@@ -63,10 +63,10 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
     }
   };
 
-  // Truncate source for display
-  const displaySource = schedule.source.length > 60
+  // Show name if available, otherwise truncate source
+  const displayName = schedule.name || (schedule.source.length > 60
     ? schedule.source.slice(0, 57) + "..."
-    : schedule.source;
+    : schedule.source);
 
   return (
     <Card>
@@ -80,7 +80,7 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
             {schedule.status === "cancelled" && <X className="h-4 w-4 text-muted-foreground" />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm break-all line-clamp-2">{displaySource}</p>
+            <p className="text-sm break-all line-clamp-2">{displayName}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant="secondary" className="text-[10px] font-normal">
                 {schedule.category}

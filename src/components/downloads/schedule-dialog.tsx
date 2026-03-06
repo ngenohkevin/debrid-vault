@@ -40,7 +40,7 @@ export function ScheduleDialog({ open, onOpenChange, source, category, folder, n
     setSubmitting(true);
     try {
       const scheduledAt = new Date(scheduleDate).toISOString();
-      await api.createSchedule(source, category, scheduledAt, speedLimit, folder);
+      await api.createSchedule(source, category, scheduledAt, speedLimit, folder, name);
       toast.success("Download scheduled!");
       onOpenChange(false);
       onScheduled?.();

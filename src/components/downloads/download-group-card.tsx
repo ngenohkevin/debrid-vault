@@ -207,13 +207,13 @@ export function DownloadGroupCard({
             </div>
           </div>
           {hasActive && totalSpeed > 0 && (
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{completedCount}/{items.length} done</span>
-              <span className="flex items-center gap-1">
-                <ArrowDown className="h-3 w-3 text-blue-400" />
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono tabular-nums">
+              <span className="w-[40%] text-left">{completedCount}/{items.length} done</span>
+              <span className="w-[30%] flex items-center justify-center gap-1">
+                <ArrowDown className="h-3 w-3 text-blue-400 shrink-0" />
                 {formatSpeed(totalSpeed)}
               </span>
-              <span>{formatETA(maxETA)}</span>
+              <span className="w-[30%] text-right">{formatETA(maxETA)}</span>
             </div>
           )}
         </div>

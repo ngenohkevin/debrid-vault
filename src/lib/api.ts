@@ -53,10 +53,10 @@ export const api = {
     fetchAPI<void>(`/api/library/${encodeURIComponent(path)}`, { method: "DELETE" }),
 
   getSchedules: () => fetchAPI<import("./types").ScheduledDownload[]>("/api/schedules"),
-  createSchedule: (source: string, category: import("./types").Category, scheduledAt: string, speedLimitMbps: number, folder?: string) =>
+  createSchedule: (source: string, category: import("./types").Category, scheduledAt: string, speedLimitMbps: number, folder?: string, name?: string) =>
     fetchAPI<import("./types").ScheduledDownload>("/api/schedules", {
       method: "POST",
-      body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}) }),
+      body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}), ...(name ? { name } : {}) }),
     }),
   cancelSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}`, { method: "DELETE" }),
   removeSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}/remove`, { method: "DELETE" }),

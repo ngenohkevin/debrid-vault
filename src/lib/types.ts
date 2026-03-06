@@ -106,6 +106,7 @@ export type ScheduleStatus = "scheduled" | "running" | "completed" | "cancelled"
 
 export interface ScheduledDownload {
   id: string;
+  name?: string;
   source: string;
   category: Category;
   folder?: string;

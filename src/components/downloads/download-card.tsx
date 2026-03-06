@@ -136,13 +136,13 @@ export function DownloadCard({ item, onUpdate }: { item: DownloadItem; onUpdate:
               </div>
             </div>
             {/* Stats row */}
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
-              <span className="flex items-center gap-1">
-                <ArrowDown className="h-3 w-3 text-blue-400" />
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono tabular-nums">
+              <span className="w-[40%] text-left truncate">{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
+              <span className="w-[30%] flex items-center justify-center gap-1">
+                <ArrowDown className="h-3 w-3 text-blue-400 shrink-0" />
                 {formatSpeed(item.speed)}
               </span>
-              <span>{formatETA(item.eta)}</span>
+              <span className="w-[30%] text-right">{formatETA(item.eta)}</span>
             </div>
             {/* Engine status hint (retries, recovery, errors) */}
             {hasStatusHint && (
