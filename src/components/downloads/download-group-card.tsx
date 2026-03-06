@@ -261,7 +261,12 @@ export function DownloadGroupCard({
       {/* Episode list */}
       {expanded && (
         <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
-          {items.map((item) => (
+          {[...items].sort((a, b) => {
+            const order: Record<string, number> = { downloading: 0, resolving: 1, queued: 2, paused: 3, moving: 4, pending: 5, error: 6, completed: 7, cancelled: 8 };
+            const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+            if (diff !== 0) return diff;
+            return a.name.localeCompare(b.name, undefined, { numeric: true });
+          }).map((item) => (
             <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} slotsAvailable={slotsAvailable} />
           ))}
         </div>
