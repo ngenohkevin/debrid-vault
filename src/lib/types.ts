@@ -1,5 +1,6 @@
 export type DownloadStatus = "pending" | "queued" | "resolving" | "downloading" | "moving" | "paused" | "completed" | "error" | "cancelled";
 export type Category = "movies" | "tv-shows";
+export type SubtitleStatus = "likely" | "unlikely" | "unknown" | "confirmed" | "none";
 
 export interface DownloadItem {
   id: string;
@@ -17,6 +18,7 @@ export interface DownloadItem {
   groupId?: string;
   groupName?: string;
   filePath?: string;
+  subtitleStatus: SubtitleStatus;
   createdAt: string;
   completedAt?: string;
 }
@@ -39,6 +41,7 @@ export interface RDDownload {
   host: string;
   download: string;
   generated: string;
+  subtitleStatus: SubtitleStatus;
 }
 
 export interface RDTorrentFile {
@@ -62,10 +65,19 @@ export interface RDTorrent {
   ended: string;
   speed: number;
   seeders: number;
+  subtitleStatus: SubtitleStatus;
 }
 
 export interface RDTorrentInfo extends RDTorrent {
   files: RDTorrentFile[];
+}
+
+export interface SubtitleTrack {
+  index: number;
+  language: string;
+  title?: string;
+  codec: string;
+  forced?: boolean;
 }
 
 export interface MediaFile {
@@ -75,6 +87,8 @@ export interface MediaFile {
   modTime: string;
   isDir: boolean;
   category: string;
+  hasSubtitles?: boolean;
+  subtitleTracks?: SubtitleTrack[];
 }
 
 export interface DiskUsage {

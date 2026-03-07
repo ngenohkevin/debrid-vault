@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X, CalendarClock } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X, CalendarClock, Subtitles } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleDialog } from "@/components/downloads/schedule-dialog";
+import { SubtitleBadge } from "@/components/downloads/subtitle-badge";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -84,6 +85,7 @@ function TorrentCard({
                 {fileCount} episodes
               </Badge>
             )}
+            <SubtitleBadge status={torrent.subtitleStatus} />
             <span className="text-[10px] text-muted-foreground">
               {formatDate(torrent.added)}
             </span>

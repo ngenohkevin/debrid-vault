@@ -9,6 +9,7 @@ import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
+import { SubtitleBadge } from "./subtitle-badge";
 
 function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number }) {
   const percent = Math.round(item.progress * 100);
@@ -52,7 +53,10 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-foreground">{item.name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-foreground">{item.name}</p>
+          <SubtitleBadge status={item.subtitleStatus} size="xs" />
+        </div>
         {isRetrying && (
           <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
         )}

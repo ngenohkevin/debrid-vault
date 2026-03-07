@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Subtitles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { SubtitleBadge } from "./subtitle-badge";
 
 function getFileName(path: string): string {
   // RD file paths look like "/Trigger.Point.S02E01.720p.mkv" or "Trigger.Point.S02E01.720p.mkv"
@@ -85,6 +86,7 @@ function TorrentCard({
                 {fileCount} episodes
               </Badge>
             )}
+            <SubtitleBadge status={torrent.subtitleStatus} />
             <span className="text-[10px] text-muted-foreground">
               {formatDate(torrent.added)}
             </span>

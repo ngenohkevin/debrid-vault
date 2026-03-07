@@ -9,6 +9,7 @@ import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/forma
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
+import { SubtitleBadge } from "./subtitle-badge";
 
 export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
@@ -103,6 +104,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
                 {item.category}
               </Badge>
               <span className={`text-[10px] capitalize ${getStatusColor(item.status)}`}>{item.status}</span>
+              <SubtitleBadge status={item.subtitleStatus} />
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">

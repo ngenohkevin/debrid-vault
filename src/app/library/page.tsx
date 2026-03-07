@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive } from "lucide-react";
+import { Film, Tv, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive, Subtitles } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Badge } from "@/components/ui/badge";
@@ -148,6 +148,26 @@ export default function LibraryPage() {
                         <HardDrive className="h-2.5 w-2.5" />
                         {formatBytes(file.size)}
                       </Badge>
+                      {!file.isDir && file.hasSubtitles !== undefined && (
+                        file.hasSubtitles ? (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-green-400" title={
+                            file.subtitleTracks?.map(t => {
+                              let s = t.language || "und";
+                              if (t.title) s += ` (${t.title})`;
+                              if (t.forced) s += " [forced]";
+                              return s;
+                            }).join(", ") || "Embedded subtitles"
+                          }>
+                            <Subtitles className="h-2.5 w-2.5" />
+                            {file.subtitleTracks?.length || 0} subs
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/40">
+                            <Subtitles className="h-2.5 w-2.5" />
+                            No subs
+                          </span>
+                        )
+                      )}
                       <span className="text-[10px] text-muted-foreground">
                         {formatDate(file.modTime)}
                       </span>
