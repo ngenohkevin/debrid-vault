@@ -19,6 +19,7 @@ export interface DownloadItem {
   groupName?: string;
   filePath?: string;
   subtitleStatus: SubtitleStatus;
+  scheduledFor?: string;
   createdAt: string;
   completedAt?: string;
 }

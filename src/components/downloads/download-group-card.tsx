@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, AlertCircle, Loader2, Pause, Play, RefreshCw } from "lucide-react";
+import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, AlertCircle, Loader2, Pause, Play, RefreshCw, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DownloadItem } from "@/lib/types";
@@ -14,6 +14,7 @@ import { SubtitleBadge } from "./subtitle-badge";
 function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number }) {
   const percent = Math.round(item.progress * 100);
   const isRetrying = item.status === "downloading" && item.error?.includes("retry");
+  const isScheduled = item.status === "paused" && !!item.scheduledFor;
 
   const handlePause = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -45,7 +46,9 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         {item.status === "resolving" && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
         {item.status === "moving" && <Loader2 className="h-3 w-3 animate-spin text-purple-400" />}
         {item.status === "paused" && (
-          percent > 0 ? <span className="text-[10px] font-mono text-amber-400">{percent}%</span> : <Pause className="h-3 w-3 text-amber-400" />
+          isScheduled
+            ? <CalendarClock className="h-3 w-3 text-blue-400" />
+            : percent > 0 ? <span className="text-[10px] font-mono text-amber-400">{percent}%</span> : <Pause className="h-3 w-3 text-amber-400" />
         )}
         {item.status === "queued" && <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
         {(item.status === "pending" || item.status === "cancelled") && (
@@ -88,7 +91,7 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
           {item.status === "pending" && "waiting"}
           {item.status === "resolving" && "resolving"}
           {item.status === "moving" && "moving"}
-          {item.status === "paused" && <span className="text-amber-400">paused</span>}
+          {item.status === "paused" && (isScheduled ? <span className="text-blue-400">scheduled</span> : <span className="text-amber-400">paused</span>)}
         </span>
       </div>
     </div>
@@ -124,6 +127,7 @@ export function DownloadGroupCard({
   const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving", "queued"].includes(i.status));
   const hasDownloading = items.some((i) => i.status === "downloading" || i.status === "queued");
   const hasPaused = items.some((i) => i.status === "paused");
+  const isGroupScheduled = items.some((i) => i.status === "paused" && !!i.scheduledFor);
   const canSchedule = hasActive || hasPaused;
 
   // ETA: use the max ETA from active downloads
@@ -260,16 +264,31 @@ export function DownloadGroupCard({
           <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
             <div
               className={`absolute inset-y-0 left-0 rounded transition-all duration-300 ease-linear ${
-                isAllDone ? (errorCount > 0 ? "bg-red-500/60" : "bg-green-500/80") : "bg-blue-500/80"
+                isAllDone ? (errorCount > 0 ? "bg-red-500/60" : "bg-green-500/80")
+                  : isGroupScheduled && !hasActive ? "bg-blue-500/60"
+                  : hasPaused && !hasActive ? "bg-amber-500/60"
+                  : "bg-blue-500/80"
               }`}
               style={{ width: `${percent}%` }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                {percent}%
+                {percent}% {isGroupScheduled && !hasActive ? "· Scheduled" : hasPaused && !hasActive ? "· Paused" : ""}
               </span>
             </div>
           </div>
+          {isGroupScheduled && !hasActive && (
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{completedCount}/{items.length} done</span>
+              <span className="flex items-center gap-1 text-blue-400">
+                <CalendarClock className="h-3 w-3" />
+                {(() => {
+                  const scheduled = items.find((i) => i.scheduledFor);
+                  return scheduled ? new Date(scheduled.scheduledFor!).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Scheduled";
+                })()}
+              </span>
+            </div>
+          )}
           {hasActive && totalSpeed > 0 && (
             <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono tabular-nums">
               <span className="w-[40%] text-left">{completedCount}/{items.length} done</span>

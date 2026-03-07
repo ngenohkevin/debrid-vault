@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive } from "lucide-react";
+import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Film, Tv } from "lucide-react";
@@ -15,6 +15,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
   const isDone = ["completed", "error", "cancelled"].includes(item.status);
   const isPaused = item.status === "paused";
+  const isScheduled = isPaused && !!item.scheduledFor;
   const percent = Math.round(item.progress * 100);
 
   // Engine status hint — shown during downloading when retrying/recovering
@@ -103,7 +104,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
               <Badge variant="secondary" className="text-[10px] font-normal">
                 {item.category}
               </Badge>
-              <span className={`text-[10px] capitalize ${getStatusColor(item.status)}`}>{item.status}</span>
+              <span className={`text-[10px] capitalize ${isScheduled ? "text-blue-400" : getStatusColor(item.status)}`}>{isScheduled ? "scheduled" : item.status}</span>
               <SubtitleBadge status={item.subtitleStatus} />
             </div>
           </div>
@@ -234,18 +235,25 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
           <div className="space-y-1.5">
             <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 rounded bg-amber-500/60"
+                className={`absolute inset-y-0 left-0 rounded ${isScheduled ? "bg-blue-500/60" : "bg-amber-500/60"}`}
                 style={{ width: `${percent}%` }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                  {percent}% &middot; Paused
+                  {percent}% &middot; {isScheduled ? "Scheduled" : "Paused"}
                 </span>
               </div>
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
-              <span className="text-amber-400">Paused</span>
+              {isScheduled ? (
+                <span className="flex items-center gap-1 text-blue-400">
+                  <CalendarClock className="h-3 w-3" />
+                  {new Date(item.scheduledFor!).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              ) : (
+                <span className="text-amber-400">Paused</span>
+              )}
             </div>
           </div>
         )}
