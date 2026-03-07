@@ -15,6 +15,12 @@ import { useStorage } from "@/hooks/use-storage";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
+function formatSubtitleTracks(tracks?: import("@/lib/types").SubtitleTrack[]): string {
+  if (!tracks || tracks.length === 0) return "Subs";
+  const langs = [...new Set(tracks.map((t) => t.language?.toUpperCase() || "UND"))];
+  return langs.join(", ");
+}
+
 type FilterType = "all" | "movies" | "tv-shows";
 
 export default function LibraryPage() {
@@ -150,16 +156,9 @@ export default function LibraryPage() {
                       </Badge>
                       {!file.isDir && file.hasSubtitles !== undefined && (
                         file.hasSubtitles ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-green-400" title={
-                            file.subtitleTracks?.map(t => {
-                              let s = t.language || "und";
-                              if (t.title) s += ` (${t.title})`;
-                              if (t.forced) s += " [forced]";
-                              return s;
-                            }).join(", ") || "Embedded subtitles"
-                          }>
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-green-400">
                             <Subtitles className="h-2.5 w-2.5" />
-                            {file.subtitleTracks?.length || 0} subs
+                            {formatSubtitleTracks(file.subtitleTracks)}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/40">
