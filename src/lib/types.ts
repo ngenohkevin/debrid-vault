@@ -116,6 +116,7 @@ export interface ScheduledDownload {
   error?: string;
   downloadId?: string;
   groupId?: string;
+  resumeIds?: string[];
   createdAt: string;
   completedAt?: string;
 }

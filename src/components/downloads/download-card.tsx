@@ -8,6 +8,7 @@ import type { DownloadItem } from "@/lib/types";
 import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
 
 export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
@@ -81,6 +82,8 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   };
 
   const canRetryMove = item.status === "error" && item.error?.includes("staging");
+  const canSchedule = item.status === "downloading" || item.status === "queued" || isPaused;
+  const scheduleLater = useScheduleLater();
 
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
@@ -103,6 +106,9 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {canSchedule && (
+              <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
+            )}
             {item.status === "downloading" && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePause} title="Pause">
                 <Pause className="h-3.5 w-3.5" />
@@ -240,6 +246,14 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
               <span className="text-amber-400">Paused</span>
             </div>
           </div>
+        )}
+
+        {scheduleLater.open && canSchedule && (
+          <ScheduleLaterForm
+            downloadId={item.id}
+            onScheduled={() => { scheduleLater.setOpen(false); onUpdate(); }}
+            onCancel={() => scheduleLater.setOpen(false)}
+          />
         )}
 
         {item.status === "error" && item.error && (

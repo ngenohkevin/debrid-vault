@@ -75,6 +75,17 @@ export const api = {
     }),
   cancelSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}`, { method: "DELETE" }),
   removeSchedule: (id: string) => fetchAPI<void>(`/api/schedules/${id}/remove`, { method: "DELETE" }),
+  checkResumable: (id: string) => fetchAPI<{ resumable: boolean; reason?: string }>(`/api/downloads/${id}/resumable`),
+  scheduleExisting: (id: string, scheduledAt: string, speedLimitMbps: number) =>
+    fetchAPI<import("./types").ScheduledDownload>(`/api/downloads/${id}/schedule`, {
+      method: "POST",
+      body: JSON.stringify({ scheduledAt, speedLimitMbps }),
+    }),
+  scheduleExistingGroup: (groupId: string, scheduledAt: string, speedLimitMbps: number) =>
+    fetchAPI<import("./types").ScheduledDownload>(`/api/downloads/group/${groupId}/schedule`, {
+      method: "POST",
+      body: JSON.stringify({ scheduledAt, speedLimitMbps }),
+    }),
 
   getSettings: () => fetchAPI<import("./types").EngineSettings>("/api/settings"),
   updateSettings: (settings: Partial<import("./types").EngineSettings>) =>

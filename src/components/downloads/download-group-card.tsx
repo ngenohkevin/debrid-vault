@@ -8,6 +8,7 @@ import type { DownloadItem } from "@/lib/types";
 import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
 
 function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number }) {
   const percent = Math.round(item.progress * 100);
@@ -91,6 +92,7 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
 }
 
 export function DownloadGroupCard({
+  groupId,
   groupName,
   items,
   onUpdate,
@@ -103,6 +105,7 @@ export function DownloadGroupCard({
   slotsAvailable?: number;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const scheduleLater = useScheduleLater();
 
   const completedCount = items.filter((i) => i.status === "completed").length;
   const errorCount = items.filter((i) => i.status === "error").length;
@@ -117,6 +120,7 @@ export function DownloadGroupCard({
   const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving", "queued"].includes(i.status));
   const hasDownloading = items.some((i) => i.status === "downloading" || i.status === "queued");
   const hasPaused = items.some((i) => i.status === "paused");
+  const canSchedule = hasActive || hasPaused;
 
   // ETA: use the max ETA from active downloads
   const maxETA = items.reduce((max, i) => Math.max(max, i.eta), 0);
@@ -203,6 +207,9 @@ export function DownloadGroupCard({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
+          {canSchedule && (
+            <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
+          )}
           {hasDownloading && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handlePauseAll(); }} title="Pause all">
               <Pause className="h-3.5 w-3.5" />
@@ -230,6 +237,18 @@ export function DownloadGroupCard({
           )}
         </div>
       </div>
+
+      {/* Schedule for later form */}
+      {scheduleLater.open && canSchedule && (
+        <div className="px-3.5 pb-2">
+          <ScheduleLaterForm
+            downloadId={items[0].id}
+            groupId={groupId}
+            onScheduled={() => { scheduleLater.setOpen(false); onUpdate(); }}
+            onCancel={() => scheduleLater.setOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Overall progress bar */}
       {!isAllCompleted && (
