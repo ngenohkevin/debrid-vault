@@ -56,9 +56,9 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         {isRetrying && (
           <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
         )}
-        {!isRetrying && item.size > 0 && (
+        {!isRetrying && item.size > 0 && item.status !== "completed" && (
           <p className="text-[9px] text-muted-foreground mt-0.5">
-            {item.downloaded > 0 && item.status !== "completed"
+            {item.downloaded > 0
               ? `${formatBytes(item.downloaded)} / ${formatBytes(item.size)}`
               : formatBytes(item.size)}
           </p>
