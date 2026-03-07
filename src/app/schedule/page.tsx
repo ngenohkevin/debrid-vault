@@ -48,8 +48,10 @@ function toLocalDatetime(date: Date): string {
 
 function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onUpdate: () => void }) {
   const isPending = schedule.status === "scheduled";
+  const isRunning = schedule.status === "running";
   const isError = schedule.status === "error";
   const isDone = ["completed", "cancelled", "error"].includes(schedule.status);
+  const canCancel = isPending || isRunning;
   const canEdit = isPending || isError;
 
   const [editing, setEditing] = useState(false);
@@ -138,7 +140,7 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
             )}
-            {isPending && !editing && (
+            {canCancel && !editing && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancel} title="Cancel">
                 <X className="h-4 w-4" />
               </Button>

@@ -115,6 +115,7 @@ export interface ScheduledDownload {
   status: ScheduleStatus;
   error?: string;
   downloadId?: string;
+  groupId?: string;
   createdAt: string;
   completedAt?: string;
 }
