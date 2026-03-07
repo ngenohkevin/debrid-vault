@@ -55,6 +55,13 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
         {isRetrying && (
           <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
         )}
+        {!isRetrying && item.size > 0 && (
+          <p className="text-[9px] text-muted-foreground mt-0.5">
+            {item.downloaded > 0 && item.status !== "completed"
+              ? `${formatBytes(item.downloaded)} / ${formatBytes(item.size)} · ${percent}%`
+              : formatBytes(item.size)}
+          </p>
+        )}
       </div>
       <div className="shrink-0 flex items-center gap-1">
         {item.status === "downloading" && (
@@ -72,11 +79,11 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
           {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
           {item.status === "completed" && formatBytes(item.size)}
           {item.status === "error" && <span className="text-red-400">failed</span>}
-          {item.status === "queued" && (item.size > 0 ? formatBytes(item.size) : "queued")}
-          {item.status === "pending" && (item.size > 0 ? formatBytes(item.size) : "waiting")}
-          {item.status === "resolving" && (item.size > 0 ? formatBytes(item.size) : "resolving")}
-          {item.status === "moving" && (item.size > 0 ? formatBytes(item.size) : "moving")}
-          {item.status === "paused" && <span className="text-amber-400">{item.size > 0 ? formatBytes(item.size) : "paused"}</span>}
+          {item.status === "queued" && "queued"}
+          {item.status === "pending" && "waiting"}
+          {item.status === "resolving" && "resolving"}
+          {item.status === "moving" && "moving"}
+          {item.status === "paused" && <span className="text-amber-400">paused</span>}
         </span>
       </div>
     </div>
