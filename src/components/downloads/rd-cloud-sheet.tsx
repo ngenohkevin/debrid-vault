@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Subtitles } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Subtitles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -253,6 +253,9 @@ export function RDCloudSheet() {
               </SelectItem>
               <SelectItem value="tv-shows">
                 <span className="flex items-center gap-1.5"><Tv className="h-3.5 w-3.5" /> TV Shows</span>
+              </SelectItem>
+              <SelectItem value="music">
+                <span className="flex items-center gap-1.5"><Music2 className="h-3.5 w-3.5" /> Music</span>
               </SelectItem>
             </SelectContent>
           </Select>

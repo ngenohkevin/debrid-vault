@@ -3,7 +3,7 @@
 import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Film, Tv } from "lucide-react";
+import { Film, Tv, Music2 } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
 import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -94,6 +94,8 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
           <div className="mt-0.5 shrink-0">
             {item.category === "movies" ? (
               <Film className="h-4 w-4 text-blue-400" />
+            ) : item.category === "music" ? (
+              <Music2 className="h-4 w-4 text-green-400" />
             ) : (
               <Tv className="h-4 w-4 text-purple-400" />
             )}

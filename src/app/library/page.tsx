@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive, Subtitles } from "lucide-react";
+import { Film, Tv, Music2, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive, Subtitles } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ function formatSubtitleTracks(tracks?: import("@/lib/types").SubtitleTrack[]): s
   return langs.join(", ");
 }
 
-type FilterType = "all" | "movies" | "tv-shows";
+type FilterType = "all" | "movies" | "tv-shows" | "music";
 
 export default function LibraryPage() {
   const [files, setFiles] = useState<MediaFile[]>([]);
@@ -106,7 +106,7 @@ export default function LibraryPage() {
         {/* Filter */}
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-            {(["all", "movies", "tv-shows"] as FilterType[]).map((f) => (
+            {(["all", "movies", "tv-shows", "music"] as FilterType[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -116,7 +116,7 @@ export default function LibraryPage() {
                     : "hover:bg-accent"
                 }`}
               >
-                {f === "tv-shows" ? "TV Shows" : f === "movies" ? "Movies" : "All"}
+                {f === "tv-shows" ? "TV Shows" : f === "movies" ? "Movies" : f === "music" ? "Music" : "All"}
               </button>
             ))}
           </div>
@@ -143,6 +143,8 @@ export default function LibraryPage() {
                   <div className="mt-0.5 shrink-0">
                     {file.category === "movies" ? (
                       <Film className="h-4 w-4 text-blue-400" />
+                    ) : file.category === "music" ? (
+                      <Music2 className="h-4 w-4 text-green-400" />
                     ) : (
                       <Tv className="h-4 w-4 text-purple-400" />
                     )}
@@ -173,15 +175,17 @@ export default function LibraryPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
-                      onClick={() => handleMove(file)}
-                    >
-                      <ArrowRightLeft className="h-3.5 w-3.5" />
-                    </Button>
+                    {file.category !== "music" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
+                        onClick={() => handleMove(file)}
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400">

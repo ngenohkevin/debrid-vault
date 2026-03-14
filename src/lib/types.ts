@@ -1,5 +1,5 @@
 export type DownloadStatus = "pending" | "queued" | "resolving" | "downloading" | "moving" | "paused" | "completed" | "error" | "cancelled";
-export type Category = "movies" | "tv-shows";
+export type Category = "movies" | "tv-shows" | "music";
 export type SubtitleStatus = "likely" | "unlikely" | "unknown" | "confirmed" | "none";
 
 export interface DownloadItem {
