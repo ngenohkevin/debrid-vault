@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, HardDrive, Search, X, CalendarClock, Subtitles } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Search, X, CalendarClock, Subtitles } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,9 @@ function TorrentCard({
         onClick={() => isMultiFile && handleExpand()}
       >
         <div className="mt-0.5 shrink-0">
-          {isMultiFile ? (
+          {isMusicTorrent(torrent) ? (
+            <Music2 className="h-4 w-4 text-green-400" />
+          ) : isMultiFile ? (
             <Tv className="h-4 w-4 text-purple-400" />
           ) : (
             <Film className="h-4 w-4 text-blue-400" />
@@ -219,7 +221,14 @@ function TorrentCard({
   );
 }
 
-type FilterType = "all" | "movies" | "tv";
+type FilterType = "all" | "movies" | "tv" | "music";
+
+const musicPattern = /\.(flac|alac|wav|ape|dsd|dsf|dff|mp3|aac|ogg|opus|m4a|wma|aiff?)$/i;
+const musicKeywords = /\b(flac|lossless|hi-?res|sacd|dsd|vinyl rip|24bit|24-bit|16bit|16-bit|320\s*kbps|mp3)\b/i;
+
+function isMusicTorrent(torrent: RDTorrent): boolean {
+  return musicPattern.test(torrent.filename) || musicKeywords.test(torrent.filename);
+}
 
 export default function CloudPage() {
   const [torrents, setTorrents] = useState<RDTorrent[]>([]);
@@ -248,10 +257,12 @@ export default function CloudPage() {
       const q = search.toLowerCase();
       result = result.filter((t) => t.filename.toLowerCase().includes(q));
     }
-    if (filter === "movies") {
-      result = result.filter((t) => t.links.length === 1);
+    if (filter === "music") {
+      result = result.filter((t) => isMusicTorrent(t));
+    } else if (filter === "movies") {
+      result = result.filter((t) => t.links.length === 1 && !isMusicTorrent(t));
     } else if (filter === "tv") {
-      result = result.filter((t) => t.links.length > 1);
+      result = result.filter((t) => t.links.length > 1 && !isMusicTorrent(t));
     }
     return result;
   }, [torrents, search, filter]);
@@ -266,7 +277,7 @@ export default function CloudPage() {
     setDownloading(dlId);
 
     const isMulti = torrent.links.length > 1;
-    const category: Category = isMulti ? "tv-shows" : "movies";
+    const category: Category = isMusicTorrent(torrent) ? "music" : isMulti ? "tv-shows" : "movies";
 
     try {
       if (linkIndex !== undefined) {
@@ -289,7 +300,7 @@ export default function CloudPage() {
 
   const handleSchedule = (torrent: RDTorrent, linkIndex?: number) => {
     const isMulti = torrent.links.length > 1;
-    setScheduleCategory(isMulti ? "tv-shows" : "movies");
+    setScheduleCategory(isMusicTorrent(torrent) ? "music" : isMulti ? "tv-shows" : "movies");
     if (linkIndex !== undefined) {
       setScheduleSource(torrent.links[linkIndex]);
       setScheduleFolder(isMulti ? torrent.filename : undefined);
@@ -351,7 +362,7 @@ export default function CloudPage() {
         {/* Filters & Category */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-            {(["all", "movies", "tv"] as FilterType[]).map((f) => (
+            {(["all", "movies", "tv", "music"] as FilterType[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -361,7 +372,7 @@ export default function CloudPage() {
                     : "hover:bg-accent"
                 }`}
               >
-                {f === "tv" ? "TV Shows" : f === "movies" ? "Movies" : "All"}
+                {f === "tv" ? "TV Shows" : f === "movies" ? "Movies" : f === "music" ? "Music" : "All"}
               </button>
             ))}
           </div>
