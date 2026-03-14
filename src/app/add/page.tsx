@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ProviderToggle } from "@/components/provider-toggle";
 import { useProviders } from "@/hooks/use-providers";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -125,7 +124,18 @@ export default function AddPage() {
             {hasMultiple && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Provider</label>
-                <ProviderToggle providers={providers} selected={provider} onChange={setProvider} />
+                <div className="grid grid-cols-2 gap-2">
+                  {providers.map((p) => (
+                    <Button
+                      key={p.name}
+                      variant={provider === p.name ? "default" : "outline"}
+                      className={`h-12 ${provider === p.name && p.name === "torbox" ? "bg-teal-500 hover:bg-teal-600 text-white" : ""}`}
+                      onClick={() => setProvider(p.name)}
+                    >
+                      {p.displayName}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
 
