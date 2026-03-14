@@ -2,9 +2,9 @@
 
 import type { Provider } from "@/lib/types";
 
-const providerShort: Record<string, string> = {
-  realdebrid: "RD",
-  torbox: "TB",
+const providerLabel: Record<string, string> = {
+  realdebrid: "Real-Debrid",
+  torbox: "TorBox",
 };
 
 export function ProviderToggle({
@@ -42,7 +42,7 @@ export function ProviderToggle({
 export function ProviderBadge({ provider }: { provider?: string }) {
   if (!provider) return null;
 
-  const label = providerShort[provider] || provider;
+  const label = providerLabel[provider] || provider;
   const color = provider === "torbox"
     ? "bg-teal-500/15 text-teal-400 border-teal-500/30"
     : "bg-blue-500/15 text-blue-400 border-blue-500/30";
