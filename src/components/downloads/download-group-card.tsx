@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
 import { SubtitleBadge } from "./subtitle-badge";
 
-function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number }) {
+function EpisodeRow({ item, onUpdate, slotsAvailable, isMusic }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number; isMusic?: boolean }) {
   const percent = Math.round(item.progress * 100);
   const isRetrying = item.status === "downloading" && item.error?.includes("retry");
   const isScheduled = item.status === "paused" && !!item.scheduledFor;
@@ -58,7 +58,7 @@ function EpisodeRow({ item, onUpdate, slotsAvailable }: { item: DownloadItem; on
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-foreground">{item.name}</p>
-          <SubtitleBadge status={item.subtitleStatus} size="xs" />
+          {!isMusic && <SubtitleBadge status={item.subtitleStatus} size="xs" />}
         </div>
         {isRetrying && (
           <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
@@ -326,7 +326,7 @@ export function DownloadGroupCard({
             if (diff !== 0) return diff;
             return a.name.localeCompare(b.name, undefined, { numeric: true });
           }).map((item) => (
-            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} slotsAvailable={slotsAvailable} />
+            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} slotsAvailable={slotsAvailable} isMusic={isMusic} />
           ))}
         </div>
       )}

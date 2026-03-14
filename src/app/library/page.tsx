@@ -156,7 +156,7 @@ export default function LibraryPage() {
                         <HardDrive className="h-2.5 w-2.5" />
                         {formatBytes(file.size)}
                       </Badge>
-                      {!file.isDir && file.hasSubtitles !== undefined && (
+                      {file.category !== "music" && !file.isDir && file.hasSubtitles !== undefined && (
                         file.hasSubtitles ? (
                           <span className="inline-flex items-center gap-0.5 text-[10px] text-green-400">
                             <Subtitles className="h-2.5 w-2.5" />

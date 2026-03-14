@@ -107,7 +107,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
                 {item.category}
               </Badge>
               <span className={`text-[10px] capitalize ${isScheduled ? "text-blue-400" : getStatusColor(item.status)}`}>{isScheduled ? "scheduled" : item.status}</span>
-              <SubtitleBadge status={item.subtitleStatus} />
+              {item.category !== "music" && <SubtitleBadge status={item.subtitleStatus} />}
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
