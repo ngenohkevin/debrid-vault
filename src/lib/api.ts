@@ -21,21 +21,30 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function withProvider(base: string, provider?: string, extraParams?: string): string {
+  const parts: string[] = [];
+  if (extraParams) parts.push(extraParams);
+  if (provider) parts.push(`provider=${provider}`);
+  return parts.length > 0 ? `${base}?${parts.join("&")}` : base;
+}
+
 export const api = {
+  getProviders: () => fetchAPI<import("./types").Provider[]>("/api/providers"),
+
   getStatus: () => fetchAPI<import("./types").SystemStatus>("/api/status"),
   getStorage: () => fetchAPI<import("./types").StorageInfo>("/api/storage"),
 
   getDownloads: () => fetchAPI<import("./types").DownloadItem[]>("/api/downloads"),
   getDownload: (id: string) => fetchAPI<import("./types").DownloadItem>(`/api/downloads/${id}`),
-  startDownload: (source: string, category: import("./types").Category, folder?: string) =>
+  startDownload: (source: string, category: import("./types").Category, folder?: string, provider?: string) =>
     fetchAPI<import("./types").DownloadItem>("/api/downloads", {
       method: "POST",
-      body: JSON.stringify({ source, category, ...(folder ? { folder } : {}) }),
+      body: JSON.stringify({ source, category, ...(folder ? { folder } : {}), ...(provider ? { provider } : {}) }),
     }),
-  startBatchDownload: (links: string[], groupName: string, category: import("./types").Category) =>
+  startBatchDownload: (links: string[], groupName: string, category: import("./types").Category, provider?: string) =>
     fetchAPI<import("./types").DownloadItem[]>("/api/downloads/batch", {
       method: "POST",
-      body: JSON.stringify({ links, groupName, category }),
+      body: JSON.stringify({ links, groupName, category, ...(provider ? { provider } : {}) }),
     }),
   cancelDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}`, { method: "DELETE" }),
   removeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/remove`, { method: "DELETE" }),
@@ -43,12 +52,21 @@ export const api = {
   resumeDownload: (id: string) => fetchAPI<void>(`/api/downloads/${id}/resume`, { method: "POST" }),
   retryMove: (id: string) => fetchAPI<void>(`/api/downloads/${id}/retry-move`, { method: "POST" }),
 
-  getRDUser: () => fetchAPI<import("./types").RDUser>("/api/rd/user"),
-  getRDDownloads: (limit?: number) =>
-    fetchAPI<import("./types").RDDownload[]>(`/api/rd/downloads${limit ? `?limit=${limit}` : ""}`),
-  getRDTorrents: () => fetchAPI<import("./types").RDTorrent[]>("/api/rd/torrents"),
-  invalidateRDCache: () => fetchAPI<void>("/api/rd/cache/invalidate", { method: "POST" }),
-  getRDTorrentInfo: (id: string) => fetchAPI<import("./types").RDTorrentInfo>(`/api/rd/torrents/${id}`),
+  getRDUser: (provider?: string) =>
+    fetchAPI<import("./types").RDUser>(withProvider("/api/rd/user", provider)),
+  getRDDownloads: (limit?: number, provider?: string) =>
+    fetchAPI<import("./types").RDDownload[]>(withProvider("/api/rd/downloads", provider, limit ? `limit=${limit}` : "")),
+  getRDTorrents: (provider?: string) =>
+    fetchAPI<import("./types").RDTorrent[]>(withProvider("/api/rd/torrents", provider)),
+  invalidateRDCache: (provider?: string) =>
+    fetchAPI<void>(withProvider("/api/rd/cache/invalidate", provider), { method: "POST" }),
+  getRDTorrentInfo: (id: string, provider?: string) =>
+    fetchAPI<import("./types").RDTorrentInfo>(withProvider(`/api/rd/torrents/${id}`, provider)),
+  unrestrictLink: (link: string, provider?: string) =>
+    fetchAPI<{ download: string }>(withProvider("/api/rd/unrestrict", provider), {
+      method: "POST",
+      body: JSON.stringify({ link }),
+    }),
 
   getLibrary: (category?: string) =>
     fetchAPI<import("./types").MediaFile[]>(`/api/library${category ? `?category=${category}` : ""}`),
@@ -63,10 +81,10 @@ export const api = {
     fetchAPI<void>(`/api/library/${encodeURIComponent(path)}`, { method: "DELETE" }),
 
   getSchedules: () => fetchAPI<import("./types").ScheduledDownload[]>("/api/schedules"),
-  createSchedule: (source: string, category: import("./types").Category, scheduledAt: string, speedLimitMbps: number, folder?: string, name?: string) =>
+  createSchedule: (source: string, category: import("./types").Category, scheduledAt: string, speedLimitMbps: number, folder?: string, name?: string, provider?: string) =>
     fetchAPI<import("./types").ScheduledDownload>("/api/schedules", {
       method: "POST",
-      body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}), ...(name ? { name } : {}) }),
+      body: JSON.stringify({ source, category, scheduledAt, speedLimitMbps, ...(folder ? { folder } : {}), ...(name ? { name } : {}), ...(provider ? { provider } : {}) }),
     }),
   updateSchedule: (id: string, updates: { scheduledAt?: string; speedLimitMbps?: number }) =>
     fetchAPI<import("./types").ScheduledDownload>(`/api/schedules/${id}`, {

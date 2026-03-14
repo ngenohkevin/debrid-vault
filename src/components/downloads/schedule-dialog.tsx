@@ -28,10 +28,11 @@ interface ScheduleDialogProps {
   category: Category;
   folder?: string;
   name?: string;
+  provider?: string;
   onScheduled?: () => void;
 }
 
-export function ScheduleDialog({ open, onOpenChange, source, category, folder, name, onScheduled }: ScheduleDialogProps) {
+export function ScheduleDialog({ open, onOpenChange, source, category, folder, name, provider, onScheduled }: ScheduleDialogProps) {
   const [scheduleDate, setScheduleDate] = useState(defaultScheduleDate);
   const [speedLimit, setSpeedLimit] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +41,7 @@ export function ScheduleDialog({ open, onOpenChange, source, category, folder, n
     setSubmitting(true);
     try {
       const scheduledAt = new Date(scheduleDate).toISOString();
-      await api.createSchedule(source, category, scheduledAt, speedLimit, folder, name);
+      await api.createSchedule(source, category, scheduledAt, speedLimit, folder, name, provider);
       toast.success("Download scheduled!");
       onOpenChange(false);
       onScheduled?.();

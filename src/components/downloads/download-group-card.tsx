@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
 import { SubtitleBadge } from "./subtitle-badge";
+import { ProviderBadge } from "@/components/provider-toggle";
 
 function EpisodeRow({ item, onUpdate, slotsAvailable, isMusic }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number; isMusic?: boolean }) {
   const percent = Math.round(item.progress * 100);
@@ -210,6 +211,7 @@ export function DownloadGroupCard({
             <Badge variant="secondary" className="text-[10px] font-normal">
               {completedCount}/{items.length} {itemLabel}
             </Badge>
+            <ProviderBadge provider={items[0]?.provider} />
             {errorCount > 0 && (
               <Badge variant="destructive" className="text-[10px] font-normal">
                 {errorCount} failed

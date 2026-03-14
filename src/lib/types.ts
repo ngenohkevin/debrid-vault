@@ -2,6 +2,11 @@ export type DownloadStatus = "pending" | "queued" | "resolving" | "downloading" 
 export type Category = "movies" | "tv-shows" | "music";
 export type SubtitleStatus = "likely" | "unlikely" | "unknown" | "confirmed" | "none";
 
+export interface Provider {
+  name: string;
+  displayName: string;
+}
+
 export interface DownloadItem {
   id: string;
   name: string;
@@ -18,6 +23,7 @@ export interface DownloadItem {
   groupId?: string;
   groupName?: string;
   filePath?: string;
+  provider?: string;
   subtitleStatus: SubtitleStatus;
   scheduledFor?: string;
   createdAt: string;

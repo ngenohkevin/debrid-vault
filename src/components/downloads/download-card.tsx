@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
 import { SubtitleBadge } from "./subtitle-badge";
+import { ProviderBadge } from "@/components/provider-toggle";
 
 export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
@@ -106,6 +107,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
               <Badge variant="secondary" className="text-[10px] font-normal">
                 {item.category}
               </Badge>
+              <ProviderBadge provider={item.provider} />
               <span className={`text-[10px] capitalize ${isScheduled ? "text-blue-400" : getStatusColor(item.status)}`}>{isScheduled ? "scheduled" : item.status}</span>
               {item.category !== "music" && <SubtitleBadge status={item.subtitleStatus} />}
             </div>

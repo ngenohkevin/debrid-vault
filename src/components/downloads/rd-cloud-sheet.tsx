@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Subtitles } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProviderToggle } from "@/components/provider-toggle";
+import { useProviders } from "@/hooks/use-providers";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -24,10 +26,12 @@ function TorrentCard({
   torrent,
   onDownload,
   downloading,
+  provider,
 }: {
   torrent: RDTorrent;
   onDownload: (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => void;
   downloading: string | null;
+  provider?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [files, setFiles] = useState<RDTorrentFile[]>([]);
@@ -44,7 +48,7 @@ function TorrentCard({
     if (files.length === 0) {
       setLoadingFiles(true);
       try {
-        const info = await api.getRDTorrentInfo(torrent.id);
+        const info = await api.getRDTorrentInfo(torrent.id, provider);
         // Only keep selected files (selected === 1) — these match the links array
         const selected = info.files.filter((f) => f.selected === 1);
         setFiles(selected);
@@ -190,18 +194,30 @@ export function RDCloudSheet() {
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState<Category>("movies");
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [provider, setProvider] = useState("realdebrid");
+  const { providers, hasMultiple } = useProviders();
   const router = useRouter();
+
+  const fetchTorrents = (prov: string) => {
+    setLoading(true);
+    api
+      .getRDTorrents(prov)
+      .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
+      .catch(() => toast.error("Failed to load cloud"))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     if (open) {
-      setLoading(true);
-      api
-        .getRDTorrents()
-        .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
-        .catch(() => toast.error("Failed to load RD cloud"))
-        .finally(() => setLoading(false));
+      fetchTorrents(provider);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const handleProviderChange = (p: string) => {
+    setProvider(p);
+    fetchTorrents(p);
+  };
 
   const handleDownload = async (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => {
     const dlId = linkIndex !== undefined ? `${torrent.id}-${linkIndex}` : torrent.id;
@@ -213,11 +229,11 @@ export function RDCloudSheet() {
       if (linkIndex !== undefined) {
         const link = torrent.links[linkIndex];
         const folder = isMulti ? torrent.filename : undefined;
-        await api.startDownload(link, category, folder);
+        await api.startDownload(link, category, folder, provider);
         const name = fileNames[0] || `file ${linkIndex + 1}`;
         toast.success(`Started: ${name}`);
       } else {
-        await api.startBatchDownload(torrent.links, torrent.filename, category);
+        await api.startBatchDownload(torrent.links, torrent.filename, category, provider);
         toast.success(`Started all ${torrent.links.length} episodes`);
       }
       setOpen(false);
@@ -233,15 +249,18 @@ export function RDCloudSheet() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" className="w-full">
-          <Cloud className="mr-2 h-4 w-4" /> Browse RD Cloud
+          <Cloud className="mr-2 h-4 w-4" /> Browse Cloud
         </Button>
       </SheetTrigger>
       <SheetContent side="bottom" className="h-[85vh] flex flex-col">
         <SheetHeader className="shrink-0">
-          <SheetTitle>Real-Debrid Cloud</SheetTitle>
+          <SheetTitle>Cloud Torrents</SheetTitle>
         </SheetHeader>
 
-        <div className="flex items-center gap-2 my-3 shrink-0">
+        <div className="flex items-center gap-2 my-3 shrink-0 flex-wrap">
+          {hasMultiple && (
+            <ProviderToggle providers={providers} selected={provider} onChange={handleProviderChange} />
+          )}
           <span className="text-sm text-muted-foreground">Save as:</span>
           <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
             <SelectTrigger className="w-32 h-9">
@@ -279,12 +298,13 @@ export function RDCloudSheet() {
                   torrent={torrent}
                   onDownload={handleDownload}
                   downloading={downloading}
+                  provider={provider}
                 />
               ))}
             {!loading && torrents.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
                 <Cloud className="h-8 w-8" />
-                <p className="text-sm">No torrents in your RD cloud</p>
+                <p className="text-sm">No torrents in your cloud</p>
               </div>
             )}
           </div>

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Crown, HardDrive, LogOut, Gauge } from "lucide-react";
+import { User, Crown, HardDrive, LogOut, Gauge, Link2 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SpeedLimit } from "@/components/downloads/speed-limit";
-import type { RDUser, StorageInfo, EngineSettings } from "@/lib/types";
+import type { RDUser, StorageInfo, EngineSettings, Provider } from "@/lib/types";
 import { formatBytes } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<RDUser | null>(null);
   const [storage, setStorage] = useState<StorageInfo | null>(null);
   const [settings, setSettings] = useState<EngineSettings | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [daysLeft, setDaysLeft] = useState(0);
 
@@ -34,10 +35,12 @@ export default function SettingsPage() {
       api.getRDUser().catch(() => null),
       api.getStorage().catch(() => null),
       api.getSettings().catch(() => null),
-    ]).then(([u, s, eng]) => {
+      api.getProviders().catch(() => [] as Provider[]),
+    ]).then(([u, s, eng, p]) => {
       setUser(u);
       setStorage(s);
       setSettings(eng);
+      setProviders(p);
       if (u?.expiration) {
         setDaysLeft(Math.max(0, Math.floor((new Date(u.expiration).getTime() - Date.now()) / 86400000)));
       }
@@ -90,6 +93,33 @@ export default function SettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        {providers.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Link2 className="h-4 w-4" /> Debrid Providers
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {providers.map((p) => (
+                <div key={p.name} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{p.displayName}</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      p.name === "torbox"
+                        ? "text-teal-400 border-teal-500/30"
+                        : "text-blue-400 border-blue-500/30"
+                    }
+                  >
+                    Connected
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-3">

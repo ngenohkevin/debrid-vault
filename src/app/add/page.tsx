@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ProviderToggle } from "@/components/provider-toggle";
+import { useProviders } from "@/hooks/use-providers";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { Category } from "@/lib/types";
@@ -28,6 +30,7 @@ function toLocalDatetime(date: Date): string {
 export default function AddPage() {
   const [source, setSource] = useState("");
   const [category, setCategory] = useState<Category>("movies");
+  const [provider, setProvider] = useState("realdebrid");
   const [submitting, setSubmitting] = useState(false);
   const [scheduled, setScheduled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState(() => {
@@ -38,6 +41,7 @@ export default function AddPage() {
   });
   const [speedLimit, setSpeedLimit] = useState(0);
   const router = useRouter();
+  const { providers, hasMultiple } = useProviders();
 
   const type = source.trim() ? detectType(source.trim()) : null;
 
@@ -50,12 +54,12 @@ export default function AddPage() {
     try {
       if (scheduled) {
         const scheduledAt = new Date(scheduleDate).toISOString();
-        await api.createSchedule(source.trim(), category, scheduledAt, speedLimit);
+        await api.createSchedule(source.trim(), category, scheduledAt, speedLimit, undefined, undefined, provider);
         toast.success("Download scheduled!");
         setSource("");
         router.push("/schedule");
       } else {
-        await api.startDownload(source.trim(), category);
+        await api.startDownload(source.trim(), category, undefined, provider);
         toast.success("Download started!");
         setSource("");
         router.push("/");
@@ -118,6 +122,13 @@ export default function AddPage() {
               </div>
             </div>
 
+            {hasMultiple && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Provider</label>
+                <ProviderToggle providers={providers} selected={provider} onChange={setProvider} />
+              </div>
+            )}
+
             {/* Schedule toggle */}
             <div
               className="flex items-center gap-2 cursor-pointer select-none"
@@ -177,7 +188,7 @@ export default function AddPage() {
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="w-full" onClick={() => router.push("/cloud")}>
-            <Cloud className="mr-2 h-4 w-4" /> RD Cloud
+            <Cloud className="mr-2 h-4 w-4" /> Cloud
           </Button>
           <Button variant="outline" className="w-full" onClick={() => router.push("/schedule")}>
             <CalendarClock className="mr-2 h-4 w-4" /> Schedules

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Search, X, CalendarClock, Subtitles } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Search, X, CalendarClock } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleDialog } from "@/components/downloads/schedule-dialog";
 import { SubtitleBadge } from "@/components/downloads/subtitle-badge";
+import { ProviderToggle } from "@/components/provider-toggle";
+import { useProviders } from "@/hooks/use-providers";
 import type { RDTorrent, RDTorrentFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -24,11 +26,13 @@ function TorrentCard({
   onDownload,
   onSchedule,
   downloading,
+  provider,
 }: {
   torrent: RDTorrent;
   onDownload: (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => void;
   onSchedule: (torrent: RDTorrent, linkIndex?: number) => void;
   downloading: string | null;
+  provider?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [files, setFiles] = useState<RDTorrentFile[]>([]);
@@ -45,7 +49,7 @@ function TorrentCard({
     if (files.length === 0) {
       setLoadingFiles(true);
       try {
-        const info = await api.getRDTorrentInfo(torrent.id);
+        const info = await api.getRDTorrentInfo(torrent.id, provider);
         const selected = info.files.filter((f) => f.selected === 1);
         setFiles(selected);
       } catch {
@@ -236,20 +240,33 @@ export default function CloudPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [provider, setProvider] = useState("realdebrid");
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleSource, setScheduleSource] = useState("");
   const [scheduleCategory, setScheduleCategory] = useState<Category>("movies");
   const [scheduleFolder, setScheduleFolder] = useState<string | undefined>();
   const [scheduleName, setScheduleName] = useState<string | undefined>();
+  const { providers, hasMultiple } = useProviders();
   const router = useRouter();
 
-  useEffect(() => {
+  const fetchTorrents = (prov: string) => {
+    setLoading(true);
     api
-      .getRDTorrents()
+      .getRDTorrents(prov)
       .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
-      .catch(() => toast.error("Failed to load RD cloud"))
+      .catch(() => toast.error("Failed to load cloud"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTorrents(provider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleProviderChange = (p: string) => {
+    setProvider(p);
+    fetchTorrents(p);
+  };
 
   const filtered = useMemo(() => {
     let result = torrents;
@@ -283,11 +300,11 @@ export default function CloudPage() {
       if (linkIndex !== undefined) {
         const link = torrent.links[linkIndex];
         const folder = isMulti ? torrent.filename : undefined;
-        await api.startDownload(link, category, folder);
+        await api.startDownload(link, category, folder, provider);
         const name = fileNames[0] || `file ${linkIndex + 1}`;
         toast.success(`Started: ${name}`);
       } else {
-        await api.startBatchDownload(torrent.links, torrent.filename, category);
+        await api.startBatchDownload(torrent.links, torrent.filename, category, provider);
         toast.success(`Started all ${torrent.links.length} episodes`);
       }
       router.push("/");
@@ -315,12 +332,14 @@ export default function CloudPage() {
 
   const handleRefresh = () => {
     setLoading(true);
-    api.invalidateRDCache()
-      .then(() => api.getRDTorrents())
+    api.invalidateRDCache(provider)
+      .then(() => api.getRDTorrents(provider))
       .then((t) => setTorrents(t.filter((t) => t.status === "downloaded")))
       .catch(() => toast.error("Failed to refresh"))
       .finally(() => setLoading(false));
   };
+
+  const providerLabel = providers.find((p) => p.name === provider)?.displayName || "Cloud";
 
   return (
     <AppShell>
@@ -328,7 +347,7 @@ export default function CloudPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold">RD Cloud</h1>
+            <h1 className="text-lg font-semibold">{hasMultiple ? providerLabel : "RD"} Cloud</h1>
             {!loading && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 {torrents.length} torrents &middot; {formatBytes(totalSize)}
@@ -339,6 +358,11 @@ export default function CloudPage() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
           </Button>
         </div>
+
+        {/* Provider toggle */}
+        {hasMultiple && (
+          <ProviderToggle providers={providers} selected={provider} onChange={handleProviderChange} />
+        )}
 
         {/* Search */}
         <div className="relative">
@@ -400,6 +424,7 @@ export default function CloudPage() {
                 onDownload={handleDownload}
                 onSchedule={handleSchedule}
                 downloading={downloading}
+                provider={provider}
               />
             ))}
           {!loading && filtered.length === 0 && torrents.length > 0 && (
@@ -414,7 +439,7 @@ export default function CloudPage() {
           {!loading && torrents.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
               <Cloud className="h-8 w-8" />
-              <p className="text-sm">No torrents in your RD cloud</p>
+              <p className="text-sm">No torrents in your cloud</p>
             </div>
           )}
         </div>
@@ -427,6 +452,7 @@ export default function CloudPage() {
         category={scheduleCategory}
         folder={scheduleFolder}
         name={scheduleName}
+        provider={provider}
         onScheduled={() => router.push("/schedule")}
       />
     </AppShell>
