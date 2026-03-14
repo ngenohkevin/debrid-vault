@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, Music2, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive, Subtitles } from "lucide-react";
+import { Film, Tv, Music2, Trash2, Search, X, ArrowRightLeft, FolderOpen, HardDrive, Subtitles, ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StorageCards } from "@/components/library/storage-cards";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import type { MediaFile } from "@/lib/types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import type { MediaFile, Category } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/formatters";
 import { useStorage } from "@/hooks/use-storage";
 import { api } from "@/lib/api";
@@ -47,8 +48,7 @@ export default function LibraryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchFiles(); }, [filter, search]);
 
-  const handleMove = async (file: MediaFile) => {
-    const target = file.category === "movies" ? "tv-shows" : "movies";
+  const handleMove = async (file: MediaFile, target: Category) => {
     try {
       await api.moveMedia(file.path, target);
       toast.success(`Moved to ${target}`);
@@ -175,17 +175,30 @@ export default function LibraryPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0">
-                    {file.category !== "music" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        title={`Move to ${file.category === "movies" ? "TV Shows" : "Movies"}`}
-                        onClick={() => handleMove(file)}
-                      >
-                        <ArrowRightLeft className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Move to...">
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {file.category !== "movies" && (
+                          <DropdownMenuItem onClick={() => handleMove(file, "movies")}>
+                            <Film className="h-3.5 w-3.5 mr-2 text-blue-400" /> Movies
+                          </DropdownMenuItem>
+                        )}
+                        {file.category !== "tv-shows" && (
+                          <DropdownMenuItem onClick={() => handleMove(file, "tv-shows")}>
+                            <Tv className="h-3.5 w-3.5 mr-2 text-purple-400" /> TV Shows
+                          </DropdownMenuItem>
+                        )}
+                        {file.category !== "music" && (
+                          <DropdownMenuItem onClick={() => handleMove(file, "music")}>
+                            <Music2 className="h-3.5 w-3.5 mr-2 text-green-400" /> Music
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400">
