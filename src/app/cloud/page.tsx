@@ -344,22 +344,20 @@ export default function CloudPage() {
       <div className="p-4 md:p-6 space-y-4 max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold">Cloud</h1>
-            {!loading && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {torrents.length} torrents &middot; {formatBytes(totalSize)}
-              </p>
+            {hasMultiple && (
+              <ProviderToggle providers={providers} selected={provider} onChange={handleProviderChange} />
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
           </Button>
         </div>
-
-        {/* Provider toggle */}
-        {hasMultiple && (
-          <ProviderToggle providers={providers} selected={provider} onChange={handleProviderChange} />
+        {!loading && (
+          <p className="text-xs text-muted-foreground -mt-2">
+            {torrents.length} torrents &middot; {formatBytes(totalSize)}
+          </p>
         )}
 
         {/* Search */}
