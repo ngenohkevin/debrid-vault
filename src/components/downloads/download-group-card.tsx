@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, AlertCircle, Loader2, Pause, Play, RefreshCw, CalendarClock } from "lucide-react";
+import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, Music2, Film, AlertCircle, Loader2, Pause, Play, RefreshCw, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { DownloadItem } from "@/lib/types";
@@ -122,6 +122,10 @@ export function DownloadGroupCard({
   const overallProgress = totalSize > 0 ? totalDownloaded / totalSize : 0;
   const percent = Math.round(overallProgress * 100);
 
+  const category = items[0]?.category;
+  const isMusic = category === "music";
+  const itemLabel = isMusic ? "tracks" : "episodes";
+
   const isAllDone = items.every((i) => ["completed", "error", "cancelled"].includes(i.status));
   const isAllCompleted = items.every((i) => i.status === "completed");
   const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving", "queued"].includes(i.status));
@@ -140,7 +144,7 @@ export function DownloadGroupCard({
           await api.pauseDownload(item.id);
         }
       }
-      toast.success("Paused all episodes");
+      toast.success(`Paused all ${itemLabel}`);
       onUpdate();
     } catch {
       toast.error("Failed to pause");
@@ -154,7 +158,7 @@ export function DownloadGroupCard({
           await api.resumeDownload(item.id);
         }
       }
-      toast.success("Resumed all episodes");
+      toast.success(`Resumed all ${itemLabel}`);
       onUpdate();
     } catch {
       toast.error("Failed to resume");
@@ -168,7 +172,7 @@ export function DownloadGroupCard({
           await api.cancelDownload(item.id);
         }
       }
-      toast.success("Cancelled all episodes");
+      toast.success(`Cancelled all ${itemLabel}`);
       onUpdate();
     } catch {
       toast.error("Failed to cancel");
@@ -194,13 +198,17 @@ export function DownloadGroupCard({
         onClick={() => setExpanded(!expanded)}
       >
         <div className="mt-0.5 shrink-0">
-          <Tv className="h-4 w-4 text-purple-400" />
+          {isMusic ? (
+            <Music2 className="h-4 w-4 text-green-400" />
+          ) : (
+            <Tv className="h-4 w-4 text-purple-400" />
+          )}
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
           <p className="text-sm font-medium leading-snug line-clamp-2">{groupName}</p>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-[10px] font-normal">
-              {completedCount}/{items.length} episodes
+              {completedCount}/{items.length} {itemLabel}
             </Badge>
             {errorCount > 0 && (
               <Badge variant="destructive" className="text-[10px] font-normal">
@@ -305,7 +313,7 @@ export function DownloadGroupCard({
       {isAllCompleted && (
         <div className="px-3.5 pb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Check className="h-3.5 w-3.5 text-green-400" />
-          <span>All {items.length} episodes &middot; {formatBytes(totalSize)}</span>
+          <span>All {items.length} {itemLabel} &middot; {formatBytes(totalSize)}</span>
         </div>
       )}
 
