@@ -3,13 +3,13 @@
 import type { Provider } from "@/lib/types";
 
 const providerColors: Record<string, string> = {
-  realdebrid: "bg-blue-500 text-white",
-  torbox: "bg-teal-500 text-white",
+  realdebrid: "bg-blue-500 text-white shadow-sm",
+  torbox: "bg-teal-500 text-white shadow-sm",
 };
 
 const providerInactiveColors: Record<string, string> = {
-  realdebrid: "hover:bg-blue-500/10 text-blue-400",
-  torbox: "hover:bg-teal-500/10 text-teal-400",
+  realdebrid: "hover:bg-blue-500/10 text-muted-foreground",
+  torbox: "hover:bg-teal-500/10 text-muted-foreground",
 };
 
 const providerShort: Record<string, string> = {
@@ -29,12 +29,12 @@ export function ProviderToggle({
   if (providers.length <= 1) return null;
 
   return (
-    <div className="inline-flex rounded-lg border border-border overflow-hidden text-xs">
+    <div className="flex rounded-lg border border-border overflow-hidden">
       {providers.map((p) => (
         <button
           key={p.name}
           onClick={() => onChange(p.name)}
-          className={`px-2.5 py-1 transition-colors font-medium ${
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
             selected === p.name
               ? providerColors[p.name] || "bg-primary text-primary-foreground"
               : providerInactiveColors[p.name] || "hover:bg-accent text-muted-foreground"

@@ -339,15 +339,13 @@ export default function CloudPage() {
       .finally(() => setLoading(false));
   };
 
-  const providerLabel = providers.find((p) => p.name === provider)?.displayName || "Cloud";
-
   return (
     <AppShell>
       <div className="p-4 md:p-6 space-y-4 max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold">{hasMultiple ? providerLabel : "RD"} Cloud</h1>
+            <h1 className="text-lg font-semibold">Cloud</h1>
             {!loading && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 {torrents.length} torrents &middot; {formatBytes(totalSize)}
