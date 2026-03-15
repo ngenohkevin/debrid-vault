@@ -134,14 +134,17 @@ export function DownloadGroupCard({
   items,
   onUpdate,
   slotsAvailable = 1,
+  removing = false,
 }: {
   groupId: string;
   groupName: string;
   items: DownloadItem[];
   onUpdate: () => void;
   slotsAvailable?: number;
+  removing?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [isRemoving, setIsRemoving] = useState(false);
   const scheduleLater = useScheduleLater();
 
   const completedCount = items.filter((i) => i.status === "completed").length;
@@ -210,23 +213,27 @@ export function DownloadGroupCard({
   };
 
   const handleRemoveAll = async () => {
+    setIsRemoving(true);
     try {
       for (const item of items) {
         if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) {
           await api.cancelDownload(item.id);
         }
       }
+      // Wait for fade animation before removing
+      await new Promise((r) => setTimeout(r, 300));
       for (const item of items) {
         await api.removeDownload(item.id);
       }
       onUpdate();
     } catch {
+      setIsRemoving(false);
       toast.error("Failed to remove");
     }
   };
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+    <div className={`rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95 h-0 mb-0 border-0 p-0" : "opacity-100 scale-100"}`}>
       {/* Header */}
       <div
         className="flex items-start gap-3 p-3.5 cursor-pointer hover:bg-accent/30 transition-colors"

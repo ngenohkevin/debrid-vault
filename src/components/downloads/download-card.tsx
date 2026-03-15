@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { SubtitleBadge } from "./subtitle-badge";
 import { ProviderBadge } from "@/components/provider-toggle";
 
 export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
+  const [isRemoving, setIsRemoving] = useState(false);
   const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
   const isDone = ["completed", "error", "cancelled"].includes(item.status);
   const isPaused = item.status === "paused";
@@ -35,10 +37,14 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   };
 
   const handleRemove = async () => {
+    setIsRemoving(true);
     try {
+      if (isActive) await api.cancelDownload(item.id);
+      await new Promise((r) => setTimeout(r, 300));
       await api.removeDownload(item.id);
       onUpdate();
     } catch {
+      setIsRemoving(false);
       toast.error("Failed to remove");
     }
   };
@@ -89,7 +95,7 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   const scheduleLater = useScheduleLater();
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+    <div className={`rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
       <div className="p-3.5 space-y-2">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 shrink-0">
