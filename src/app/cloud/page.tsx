@@ -324,8 +324,8 @@ export default function CloudPage() {
       setScheduleFolder(isMulti ? torrent.filename : undefined);
       setScheduleName(torrent.filename + (isMulti ? ` (${itemLabel} ${linkIndex + 1})` : ""));
     } else {
-      // Schedule All — join all links so the dialog can create one schedule per file
-      setScheduleSource(torrent.links.join("\n"));
+      // Schedule All — join all links with | separator for batch scheduling
+      setScheduleSource(torrent.links.join("|"));
       setScheduleFolder(torrent.filename);
       setScheduleName(torrent.filename + ` (${torrent.links.length} ${itemLabel})`);
     }

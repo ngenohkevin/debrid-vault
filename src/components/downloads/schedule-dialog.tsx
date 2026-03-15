@@ -41,12 +41,8 @@ export function ScheduleDialog({ open, onOpenChange, source, category, folder, n
     setSubmitting(true);
     try {
       const scheduledAt = new Date(scheduleDate).toISOString();
-      // Support batch scheduling: multiple sources separated by newlines
-      const sources = source.split("\n").filter((s) => s.trim());
-      for (const src of sources) {
-        await api.createSchedule(src.trim(), category, scheduledAt, speedLimit, folder, name, provider);
-      }
-      toast.success(sources.length > 1 ? `Scheduled ${sources.length} downloads!` : "Download scheduled!");
+      await api.createSchedule(source, category, scheduledAt, speedLimit, folder, name, provider);
+      toast.success("Download scheduled!");
       onOpenChange(false);
       onScheduled?.();
     } catch (err) {
