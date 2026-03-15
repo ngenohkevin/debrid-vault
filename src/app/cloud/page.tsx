@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Search, X, CalendarClock } from "lucide-react";
+import { Cloud, Download, Loader2, ChevronDown, ChevronRight, Film, Tv, Music2, HardDrive, Search, X, CalendarClock, Check } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,16 +27,21 @@ function TorrentCard({
   onSchedule,
   downloading,
   provider,
+  downloadedSources,
 }: {
   torrent: RDTorrent;
   onDownload: (torrent: RDTorrent, fileNames: string[], linkIndex?: number) => void;
   onSchedule: (torrent: RDTorrent, linkIndex?: number) => void;
   downloading: string | null;
   provider?: string;
+  downloadedSources: Set<string>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [files, setFiles] = useState<RDTorrentFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const dlCount = torrent.links.filter((l) => downloadedSources.has(l)).length;
+  const isFullyDownloaded = dlCount === torrent.links.length && dlCount > 0;
+  const isPartiallyDownloaded = dlCount > 0 && !isFullyDownloaded;
   const fileCount = torrent.links.length;
   const isMultiFile = fileCount > 1;
   const isDownloading = downloading === torrent.id;
@@ -92,6 +97,16 @@ function TorrentCard({
               </Badge>
             )}
             <SubtitleBadge status={torrent.subtitleStatus} />
+            {isFullyDownloaded && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-green-400">
+                <Check className="h-2.5 w-2.5" /> Downloaded
+              </span>
+            )}
+            {isPartiallyDownloaded && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-400">
+                <Check className="h-2.5 w-2.5" /> {dlCount}/{torrent.links.length}
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground">
               {formatDate(torrent.added)}
             </span>
@@ -156,7 +171,12 @@ function TorrentCard({
                 className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs hover:bg-accent/20 transition-colors border-b border-border/20 last:border-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-foreground">{getFileName(file.path)}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-foreground">{getFileName(file.path)}</p>
+                    {downloadedSources.has(torrent.links[i]) && (
+                      <Check className="h-3 w-3 text-green-400 shrink-0" />
+                    )}
+                  </div>
                   <p className="text-[10px] text-muted-foreground">{formatBytes(file.bytes)}</p>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
@@ -246,6 +266,7 @@ export default function CloudPage() {
   const [scheduleCategory, setScheduleCategory] = useState<Category>("movies");
   const [scheduleFolder, setScheduleFolder] = useState<string | undefined>();
   const [scheduleName, setScheduleName] = useState<string | undefined>();
+  const [downloadedSources, setDownloadedSources] = useState<Set<string>>(new Set());
   const { providers, hasMultiple } = useProviders();
   const router = useRouter();
 
@@ -260,6 +281,16 @@ export default function CloudPage() {
 
   useEffect(() => {
     fetchTorrents(provider);
+    // Fetch download history to mark already-downloaded torrents
+    api.getDownloads()
+      .then((downloads) => {
+        const sources = new Set<string>();
+        for (const d of downloads) {
+          if (d.status === "completed" && d.source) sources.add(d.source);
+        }
+        setDownloadedSources(sources);
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -423,6 +454,7 @@ export default function CloudPage() {
                 onSchedule={handleSchedule}
                 downloading={downloading}
                 provider={provider}
+                downloadedSources={downloadedSources}
               />
             ))}
           {!loading && filtered.length === 0 && torrents.length > 0 && (
