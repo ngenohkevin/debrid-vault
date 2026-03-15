@@ -33,6 +33,25 @@ function EpisodeRow({ item, onUpdate, slotsAvailable, isMusic }: { item: Downloa
     } catch { /* ignore */ }
   };
 
+  const handleCancel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.cancelDownload(item.id);
+      onUpdate();
+    } catch { /* ignore */ }
+  };
+
+  const handleRemove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.removeDownload(item.id);
+      onUpdate();
+    } catch { /* ignore */ }
+  };
+
+  const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
+  const isDone = ["completed", "error", "cancelled"].includes(item.status);
+
   return (
     <div className="flex items-center gap-2 px-3.5 py-2 text-xs border-b border-border/20 last:border-0">
       <div className="w-5 shrink-0 flex justify-center">
@@ -81,6 +100,16 @@ function EpisodeRow({ item, onUpdate, slotsAvailable, isMusic }: { item: Downloa
         {item.status === "paused" && slotsAvailable > 0 && (
           <button onClick={handleResume} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Resume">
             <Play className="h-3 w-3 text-blue-400" />
+          </button>
+        )}
+        {isActive && (
+          <button onClick={handleCancel} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Cancel">
+            <X className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
+        {isDone && (
+          <button onClick={handleRemove} className="p-0.5 rounded hover:bg-red-500/20 transition-colors" title="Remove">
+            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-400" />
           </button>
         )}
         <span className="text-[10px] text-muted-foreground min-w-[4rem] text-right">
