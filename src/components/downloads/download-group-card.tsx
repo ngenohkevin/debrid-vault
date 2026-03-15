@@ -212,6 +212,11 @@ export function DownloadGroupCard({
   const handleRemoveAll = async () => {
     try {
       for (const item of items) {
+        if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) {
+          await api.cancelDownload(item.id);
+        }
+      }
+      for (const item of items) {
         await api.removeDownload(item.id);
       }
       onUpdate();
@@ -272,11 +277,9 @@ export function DownloadGroupCard({
               <X className="h-4 w-4" />
             </Button>
           )}
-          {isAllDone && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleRemoveAll(); }} title="Remove all">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleRemoveAll(); }} title="Delete all">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
           {expanded ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
