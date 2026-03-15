@@ -35,6 +35,7 @@ export const api = {
   getStorage: () => fetchAPI<import("./types").StorageInfo>("/api/storage"),
 
   getDownloads: () => fetchAPI<import("./types").DownloadItem[]>("/api/downloads"),
+  getCompletedSources: () => fetchAPI<string[]>("/api/downloads/completed-sources"),
   getDownload: (id: string) => fetchAPI<import("./types").DownloadItem>(`/api/downloads/${id}`),
   startDownload: (source: string, category: import("./types").Category, folder?: string, provider?: string) =>
     fetchAPI<import("./types").DownloadItem>("/api/downloads", {

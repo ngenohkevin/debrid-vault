@@ -39,10 +39,9 @@ function TorrentCard({
   const [expanded, setExpanded] = useState(false);
   const [files, setFiles] = useState<RDTorrentFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const isDownloadedByName = downloadedSources.has(torrent.filename.toLowerCase());
   const dlCount = torrent.links.filter((l) => downloadedSources.has(l)).length;
-  const isFullyDownloaded = isDownloadedByName || (dlCount === torrent.links.length && dlCount > 0);
-  const isPartiallyDownloaded = !isFullyDownloaded && dlCount > 0;
+  const isFullyDownloaded = dlCount === torrent.links.length && dlCount > 0;
+  const isPartiallyDownloaded = dlCount > 0 && !isFullyDownloaded;
   const fileCount = torrent.links.length;
   const isMultiFile = fileCount > 1;
   const isDownloading = downloading === torrent.id;
@@ -174,7 +173,7 @@ function TorrentCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-foreground">{getFileName(file.path)}</p>
-                    {(downloadedSources.has(torrent.links[i]) || downloadedSources.has(getFileName(file.path).toLowerCase())) && (
+                    {downloadedSources.has(torrent.links[i]) && (
                       <Check className="h-3 w-3 text-green-400 shrink-0" />
                     )}
                   </div>
@@ -282,21 +281,10 @@ export default function CloudPage() {
 
   useEffect(() => {
     fetchTorrents(provider);
-    // Fetch library + download history to mark already-downloaded torrents
-    Promise.all([
-      api.getLibrary().catch(() => []),
-      api.getDownloads().catch(() => []),
-    ]).then(([library, downloads]) => {
-      const names = new Set<string>();
-      // Add library filenames (files on disk)
-      for (const f of library) names.add(f.name.toLowerCase());
-      // Add completed download sources
-      for (const d of downloads) {
-        if (d.status === "completed" && d.source) names.add(d.source);
-        if (d.status === "completed" && d.name) names.add(d.name.toLowerCase());
-      }
-      setDownloadedSources(names);
-    });
+    // Fetch completed sources to mark already-downloaded torrents
+    api.getCompletedSources()
+      .then((sources) => setDownloadedSources(new Set(sources)))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
