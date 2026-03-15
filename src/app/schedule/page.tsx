@@ -59,22 +59,15 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
   const [editSpeed, setEditSpeed] = useState(schedule.speedLimitMbps);
   const [saving, setSaving] = useState(false);
 
-  const handleCancel = async () => {
+  const handleDelete = async () => {
     try {
-      await api.cancelSchedule(schedule.id);
-      toast.success("Schedule cancelled");
-      onUpdate();
-    } catch {
-      toast.error("Failed to cancel");
-    }
-  };
-
-  const handleRemove = async () => {
-    try {
+      if (isPending || schedule.status === "running") {
+        await api.cancelSchedule(schedule.id);
+      }
       await api.removeSchedule(schedule.id);
       onUpdate();
     } catch {
-      toast.error("Failed to remove");
+      toast.error("Failed to delete");
     }
   };
 
@@ -140,13 +133,8 @@ function ScheduleCard({ schedule, onUpdate }: { schedule: ScheduledDownload; onU
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
             )}
-            {canCancel && !editing && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancel} title="Cancel">
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-            {isDone && !editing && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={handleRemove} title="Remove">
+            {!editing && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={handleDelete} title="Delete">
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
