@@ -317,15 +317,17 @@ export default function CloudPage() {
 
   const handleSchedule = (torrent: RDTorrent, linkIndex?: number) => {
     const isMulti = torrent.links.length > 1;
+    const itemLabel = isMusicTorrent(torrent) ? "tracks" : "episodes";
     setScheduleCategory(isMusicTorrent(torrent) ? "music" : isMulti ? "tv-shows" : "movies");
     if (linkIndex !== undefined) {
       setScheduleSource(torrent.links[linkIndex]);
       setScheduleFolder(isMulti ? torrent.filename : undefined);
-      setScheduleName(torrent.filename + (isMulti ? ` (episode ${linkIndex + 1})` : ""));
+      setScheduleName(torrent.filename + (isMulti ? ` (${itemLabel} ${linkIndex + 1})` : ""));
     } else {
-      setScheduleSource(torrent.links[0]);
+      // Schedule All — join all links so the dialog can create one schedule per file
+      setScheduleSource(torrent.links.join("\n"));
       setScheduleFolder(torrent.filename);
-      setScheduleName(torrent.filename + ` (${torrent.links.length} episodes)`);
+      setScheduleName(torrent.filename + ` (${torrent.links.length} ${itemLabel})`);
     }
     setScheduleOpen(true);
   };
