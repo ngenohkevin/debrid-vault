@@ -113,10 +113,10 @@ export const api = {
     fetchAPI<import("./types").MusicAlbum>(`/api/music/album?id=${encodeURIComponent(id)}`),
   musicArtist: (id: string) =>
     fetchAPI<import("./types").MusicDiscography>(`/api/music/artist?id=${encodeURIComponent(id)}`),
-  musicDownloadTrack: (trackId: string, quality?: string, folder?: string) =>
+  musicDownloadTrack: (params: { trackId: string; title: string; artist: string; album?: string; trackNumber?: number; quality?: string; folder?: string }) =>
     fetchAPI<import("./types").DownloadItem>("/api/music/download/track", {
       method: "POST",
-      body: JSON.stringify({ trackId, ...(quality ? { quality } : {}), ...(folder ? { folder } : {}) }),
+      body: JSON.stringify(params),
     }),
   musicDownloadAlbum: (albumId: string, quality?: string) =>
     fetchAPI<import("./types").MusicAlbumDownloadResult>("/api/music/download/album", {

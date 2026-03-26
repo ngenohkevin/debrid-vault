@@ -75,17 +75,24 @@ export default function MusicPage() {
     setDetailLoading(false);
   };
 
-  const downloadTrack = async (trackId: string) => {
-    setDownloadingTracks((s) => new Set(s).add(trackId));
+  const downloadTrack = async (track: MusicTrack, trackNumber?: number) => {
+    const id = track.id;
+    setDownloadingTracks((s) => new Set(s).add(id));
     try {
-      await api.musicDownloadTrack(trackId);
+      await api.musicDownloadTrack({
+        trackId: id,
+        title: track.title,
+        artist: track.artist,
+        album: track.albumTitle,
+        trackNumber: trackNumber || 1,
+      });
       toast.success("Track queued for download");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Download failed");
     }
     setDownloadingTracks((s) => {
       const next = new Set(s);
-      next.delete(trackId);
+      next.delete(id);
       return next;
     });
   };
@@ -188,7 +195,7 @@ export default function MusicPage() {
                     key={track.id}
                     track={track}
                     downloading={downloadingTracks.has(track.id)}
-                    onDownload={() => downloadTrack(track.id)}
+                    onDownload={() => downloadTrack(track)}
                     onAlbumClick={() => track.albumId && openAlbum(track.albumId)}
                   />
                 ))}
@@ -304,7 +311,7 @@ export default function MusicPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 shrink-0"
-                            onClick={() => downloadTrack(track.id)}
+                            onClick={() => downloadTrack({ ...track, albumTitle: track.albumTitle || selectedAlbum.title }, i + 1)}
                             disabled={downloadingTracks.has(track.id)}
                           >
                             {downloadingTracks.has(track.id) ? (
