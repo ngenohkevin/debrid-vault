@@ -125,15 +125,30 @@ export const api = {
     }),
   musicLyrics: (title: string, artist: string) =>
     fetchAPI<import("./types").MusicLyrics>(`/api/music/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`),
-  musicUpload: (file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return fetch(`${API_BASE}/api/music/upload`, { method: "POST", body: form }).then(async (res) => {
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: `Upload failed (${res.status})` }));
-        throw new Error(body.error || `Upload failed (${res.status})`);
+  musicUpload: (file: File, onProgress?: (percent: number) => void) => {
+    return new Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const form = new FormData();
+      form.append("file", file);
+
+      if (onProgress) {
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+        });
       }
-      return res.json() as Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>;
+
+      xhr.addEventListener("load", () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 400) reject(new Error(data.error || `Upload failed (${xhr.status})`));
+          else resolve(data);
+        } catch { reject(new Error(`Upload failed (${xhr.status})`)); }
+      });
+      xhr.addEventListener("error", () => reject(new Error("Upload failed — network error")));
+      xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
+
+      xhr.open("POST", `${API_BASE}/api/music/upload`);
+      xhr.send(form);
     });
   },
   musicScheduleTrack: (params: { trackId: string; title: string; artist: string; album?: string; trackNumber?: number; scheduledAt: string; speedLimitMbps?: number }) =>

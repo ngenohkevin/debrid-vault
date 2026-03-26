@@ -35,15 +35,18 @@ export default function MusicPage() {
   // Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const result = await api.musicUpload(file);
+      const result = await api.musicUpload(file, (percent) => setUploadProgress(percent));
       toast.success(`Uploaded ${result.tracks} track${result.tracks !== 1 ? "s" : ""} to ${result.artist}/${result.album}`);
     } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
     setUploading(false);
+    setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -137,10 +140,17 @@ export default function MusicPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[12px] text-fg-secondary hover:bg-surface-secondary transition-colors"
+              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[12px] text-fg-secondary hover:bg-surface-secondary transition-colors overflow-hidden"
             >
-              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-              Upload
+              {uploading && (
+                <div className="absolute inset-0 bg-accent-green/15">
+                  <div className="h-full bg-accent-green/20 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                </div>
+              )}
+              <span className="relative flex items-center gap-1.5">
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {uploading ? `${uploadProgress}%` : "Upload"}
+              </span>
             </button>
           </PageHeader>
         ) : (
