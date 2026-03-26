@@ -260,6 +260,12 @@ export default function MusicPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {selectedAlbum.year && <Badge variant="secondary" className="text-[10px]">{selectedAlbum.year}</Badge>}
                         {selectedAlbum.genre && <Badge variant="secondary" className="text-[10px]">{selectedAlbum.genre}</Badge>}
+                        {selectedAlbum.tracks?.[0]?.audioQuality && (
+                          <Badge variant="secondary" className={`text-[10px] gap-0.5 ${selectedAlbum.tracks[0].audioQuality.isHiRes ? "text-amber-400 border-amber-400/30" : "text-green-400 border-green-400/30"}`}>
+                            {selectedAlbum.tracks[0].audioQuality.isHiRes && <Sparkles className="h-2.5 w-2.5" />}
+                            {selectedAlbum.tracks[0].audioQuality.maximumBitDepth}bit/{selectedAlbum.tracks[0].audioQuality.maximumSamplingRate}kHz
+                          </Badge>
+                        )}
                         {selectedAlbum.totalTracks && (
                           <span className="text-[10px] text-muted-foreground">{selectedAlbum.totalTracks} tracks</span>
                         )}
@@ -378,8 +384,11 @@ function TrackRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {track.audioQuality?.isHiRes && (
-            <span title="Hi-Res"><Sparkles className="h-3 w-3 text-amber-400" /></span>
+          {track.audioQuality && (
+            <Badge variant="secondary" className={`text-[9px] font-normal gap-0.5 ${track.audioQuality.isHiRes ? "text-amber-400 border-amber-400/30" : "text-green-400 border-green-400/30"}`}>
+              {track.audioQuality.isHiRes && <Sparkles className="h-2.5 w-2.5" />}
+              {track.audioQuality.maximumBitDepth}bit/{track.audioQuality.maximumSamplingRate}kHz
+            </Badge>
           )}
           {track.duration > 0 && (
             <span className="text-xs text-muted-foreground flex items-center gap-0.5">
