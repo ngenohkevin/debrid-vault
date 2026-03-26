@@ -24,8 +24,13 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   const isRetrying = hasStatusHint && (item.error?.includes("retry") || item.error?.includes("Retrying"));
 
   const handleCancel = async () => {
-    try { await api.cancelDownload(item.id); toast.success("Download cancelled"); onUpdate(); }
-    catch { toast.error("Failed to cancel"); }
+    setIsRemoving(true);
+    try {
+      await api.cancelDownload(item.id);
+      await new Promise((r) => setTimeout(r, 300));
+      await api.removeDownload(item.id);
+      toast.success("Download cancelled"); onUpdate();
+    } catch { setIsRemoving(false); toast.error("Failed to cancel"); }
   };
   const handleRemove = async () => {
     setIsRemoving(true);

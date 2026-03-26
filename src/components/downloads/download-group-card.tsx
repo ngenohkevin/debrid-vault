@@ -147,10 +147,18 @@ export function DownloadGroupCard({
     } catch { toast.error("Failed to resume"); }
   };
   const handleCancelAll = async () => {
+    setIsRemoving(true);
     try {
-      for (const item of items) { if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) await api.cancelDownload(item.id); }
+      for (const item of items) {
+        if (["downloading", "resolving", "pending", "moving", "queued", "paused"].includes(item.status)) {
+          await api.cancelDownload(item.id);
+        }
+      }
+      // Brief delay then remove all items so they don't linger in history
+      await new Promise((r) => setTimeout(r, 300));
+      for (const item of items) await api.removeDownload(item.id);
       toast.success(`Cancelled all ${itemLabel}`); onUpdate();
-    } catch { toast.error("Failed to cancel"); }
+    } catch { setIsRemoving(false); toast.error("Failed to cancel"); }
   };
   const handleRemoveAll = async () => {
     setIsRemoving(true);
