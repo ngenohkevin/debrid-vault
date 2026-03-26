@@ -1,5 +1,16 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
+// For large uploads, bypass Cloudflare (100MB limit) and the Next.js proxy
+// by sending directly to the Pi backend via Tailscale HTTPS.
+// Falls back to the proxy for non-Tailscale networks.
+function getUploadBase(): string {
+  if (typeof window === "undefined") return API_BASE;
+  const env = process.env.NEXT_PUBLIC_UPLOAD_URL;
+  if (env) return env;
+  // Auto-detect: if on tailnet, use direct Pi URL
+  return "https://pi.taila26a58.ts.net:6501";
+}
+
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -147,7 +158,7 @@ export const api = {
       xhr.addEventListener("error", () => reject(new Error("Upload failed — network error")));
       xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
 
-      xhr.open("POST", `${API_BASE}/api/music/upload`);
+      xhr.open("POST", `${getUploadBase()}/api/music/upload`);
       xhr.send(form);
     });
     return { promise, abort: () => xhr.abort() };
