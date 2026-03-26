@@ -1,4 +1,4 @@
-const CACHE_NAME = "vault-v2";
+const CACHE_NAME = "vault-v3";
 
 self.addEventListener("install", () => { self.skipWaiting(); });
 
