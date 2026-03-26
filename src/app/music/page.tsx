@@ -278,8 +278,8 @@ export default function MusicPage() {
                       <p className="text-base font-semibold leading-snug">{selectedAlbum.title}</p>
                       <p className="text-sm text-muted-foreground">{selectedAlbum.artist}</p>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {selectedAlbum.year && (
-                          <Badge variant="secondary" className="text-[10px]">{selectedAlbum.year}</Badge>
+                        {(selectedAlbum.year || selectedAlbum.releaseDate) && (
+                          <Badge variant="secondary" className="text-[10px]">{selectedAlbum.year || selectedAlbum.releaseDate?.slice(0, 4)}</Badge>
                         )}
                         {selectedAlbum.genre && (
                           <Badge variant="secondary" className="text-[10px]">{selectedAlbum.genre}</Badge>
