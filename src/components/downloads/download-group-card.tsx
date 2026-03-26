@@ -190,12 +190,13 @@ export function DownloadGroupCard({
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-fg-muted">
             {hasActive && totalSpeed > 0 ? (
-              <>
+              <span className="flex items-center gap-2">
                 <span>{formatSpeed(totalSpeed)}</span>
-                <span>ETA {formatETA(maxETA)}</span>
-              </>
-            ) : null}
-            <span className="ml-auto">{completedCount}/{items.length} {itemLabel}</span>
+                <span className="text-fg-muted">&middot;</span>
+                <span className="text-accent-amber">ETA {formatETA(maxETA)}</span>
+              </span>
+            ) : <span />}
+            <span>{completedCount}/{items.length} {itemLabel}</span>
           </div>
         </div>
       </div>
