@@ -23,13 +23,11 @@ export default function MusicPage() {
   const [albums, setAlbums] = useState<MusicAlbum[]>([]);
   const [artists, setArtists] = useState<MusicArtist[]>([]);
 
-  // Album/Artist detail view
   const [view, setView] = useState<View>("search");
   const [selectedAlbum, setSelectedAlbum] = useState<MusicAlbum | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<MusicDiscography | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Download state
   const [downloadingTracks, setDownloadingTracks] = useState<Set<string>>(new Set());
   const [downloadingAlbums, setDownloadingAlbums] = useState<Set<string>>(new Set());
 
@@ -130,17 +128,20 @@ export default function MusicPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <div>
-            <h1 className="text-lg font-semibold">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-semibold truncate">
               {view === "album" && selectedAlbum ? selectedAlbum.title : view === "artist" && selectedArtist ? selectedArtist.artist.name : "Music"}
             </h1>
             {view === "album" && selectedAlbum && (
               <p className="text-xs text-muted-foreground mt-0.5">{selectedAlbum.artist}</p>
             )}
+            {view === "artist" && selectedArtist && (
+              <p className="text-xs text-muted-foreground mt-0.5">{selectedArtist.artist.albumsCount} albums</p>
+            )}
           </div>
         </div>
 
-        {/* Search (always visible) */}
+        {/* Search view */}
         {view === "search" && (
           <>
             <form onSubmit={handleSearch}>
@@ -164,7 +165,6 @@ export default function MusicPage() {
               </div>
             </form>
 
-            {/* Search type filter */}
             <div className="flex rounded-lg border border-border overflow-hidden text-xs">
               {(["track", "album", "artist"] as SearchType[]).map((t) => (
                 <button
@@ -179,10 +179,15 @@ export default function MusicPage() {
               ))}
             </div>
 
-            {/* Loading */}
             {loading && (
               <div className="space-y-2">
-                {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[64px] w-full rounded-xl" />)}
+                {searchType === "album" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-square w-full rounded-xl" />)}
+                  </div>
+                ) : (
+                  [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[64px] w-full rounded-xl" />)
+                )}
               </div>
             )}
 
@@ -202,13 +207,15 @@ export default function MusicPage() {
               </div>
             )}
 
-            {/* Album results */}
+            {/* Album results — grid */}
             {!loading && albums.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium px-1">Albums</p>
-                {albums.map((album) => (
-                  <AlbumRow key={album.id} album={album} onClick={() => openAlbum(album.id)} />
-                ))}
+                <div className="grid grid-cols-2 gap-3">
+                  {albums.map((album) => (
+                    <AlbumCard key={album.id} album={album} onClick={() => openAlbum(album.id)} />
+                  ))}
+                </div>
               </div>
             )}
 
@@ -222,7 +229,6 @@ export default function MusicPage() {
               </div>
             )}
 
-            {/* Empty */}
             {!loading && !hasResults && search && (
               <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
                 <Music2 className="h-8 w-8" />
@@ -230,7 +236,6 @@ export default function MusicPage() {
               </div>
             )}
 
-            {/* Initial state */}
             {!loading && !hasResults && !search && (
               <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
                 <Music2 className="h-8 w-8" />
@@ -244,43 +249,51 @@ export default function MusicPage() {
         {view === "album" && (
           <>
             {detailLoading && (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full rounded-xl" />
-                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[56px] w-full rounded-xl" />)}
+              <div className="space-y-3">
+                <div className="flex gap-4">
+                  <Skeleton className="h-28 w-28 rounded-xl shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-8 w-full mt-2" />
+                  </div>
+                </div>
+                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[52px] w-full rounded-xl" />)}
               </div>
             )}
             {!detailLoading && selectedAlbum && (
               <>
                 {/* Album header */}
                 <div className="rounded-xl border border-border/60 bg-card p-4">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     {selectedAlbum.cover ? (
-                      <img src={selectedAlbum.cover} alt={selectedAlbum.title} className="h-16 w-16 rounded-lg object-cover shrink-0" />
+                      <img src={selectedAlbum.cover} alt={selectedAlbum.title} className="h-28 w-28 rounded-xl object-cover shrink-0 shadow-lg" />
                     ) : (
-                      <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Disc3 className="h-6 w-6 text-muted-foreground" />
+                      <div className="h-28 w-28 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <Disc3 className="h-10 w-10 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <p className="text-sm font-semibold leading-snug">{selectedAlbum.title}</p>
-                      <p className="text-xs text-muted-foreground">{selectedAlbum.artist}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {selectedAlbum.year && <Badge variant="secondary" className="text-[10px]">{selectedAlbum.year}</Badge>}
-                        {selectedAlbum.genre && <Badge variant="secondary" className="text-[10px]">{selectedAlbum.genre}</Badge>}
-                        {selectedAlbum.tracks?.[0]?.audioQuality && (
-                          <Badge variant="secondary" className={`text-[10px] gap-0.5 ${selectedAlbum.tracks[0].audioQuality.isHiRes ? "text-amber-400 border-amber-400/30" : "text-green-400 border-green-400/30"}`}>
-                            {selectedAlbum.tracks[0].audioQuality.isHiRes && <Sparkles className="h-2.5 w-2.5" />}
-                            {selectedAlbum.tracks[0].audioQuality.maximumBitDepth}bit/{selectedAlbum.tracks[0].audioQuality.maximumSamplingRate}kHz
-                          </Badge>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <p className="text-base font-semibold leading-snug">{selectedAlbum.title}</p>
+                      <p className="text-sm text-muted-foreground">{selectedAlbum.artist}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {selectedAlbum.year && (
+                          <Badge variant="secondary" className="text-[10px]">{selectedAlbum.year}</Badge>
                         )}
-                        {selectedAlbum.totalTracks && (
-                          <span className="text-[10px] text-muted-foreground">{selectedAlbum.totalTracks} tracks</span>
+                        {selectedAlbum.genre && (
+                          <Badge variant="secondary" className="text-[10px]">{selectedAlbum.genre}</Badge>
+                        )}
+                        {selectedAlbum.tracks?.[0]?.audioQuality && (
+                          <QualityBadge quality={selectedAlbum.tracks[0].audioQuality} />
                         )}
                       </div>
+                      {selectedAlbum.totalTracks && (
+                        <p className="text-[11px] text-muted-foreground">{selectedAlbum.totalTracks} tracks</p>
+                      )}
                     </div>
                   </div>
                   <Button
-                    className="w-full mt-3"
+                    className="w-full mt-4"
                     size="sm"
                     onClick={() => downloadAlbum(selectedAlbum.id)}
                     disabled={downloadingAlbums.has(selectedAlbum.id)}
@@ -295,32 +308,32 @@ export default function MusicPage() {
 
                 {/* Track list */}
                 {selectedAlbum.tracks && selectedAlbum.tracks.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="rounded-xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
                     {selectedAlbum.tracks.map((track, i) => (
-                      <div key={track.id} className="rounded-xl border border-border/60 bg-card overflow-hidden">
-                        <div className="flex items-center gap-3 p-3">
-                          <span className="text-xs text-muted-foreground w-5 text-right shrink-0">{i + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium leading-snug truncate">{track.title}</p>
+                      <div key={track.id} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-accent/30 transition-colors">
+                        <span className="text-xs text-muted-foreground w-5 text-right shrink-0 tabular-nums">{i + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium leading-snug truncate">{track.title}</p>
+                          {track.artist !== selectedAlbum.artist && (
                             <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {track.duration > 0 && formatDuration(track.duration)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() => downloadTrack({ ...track, albumTitle: track.albumTitle || selectedAlbum.title }, i + 1)}
-                            disabled={downloadingTracks.has(track.id)}
-                          >
-                            {downloadingTracks.has(track.id) ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
+                          )}
                         </div>
+                        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                          {track.duration > 0 && formatDuration(track.duration)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => downloadTrack({ ...track, albumTitle: track.albumTitle || selectedAlbum.title }, i + 1)}
+                          disabled={downloadingTracks.has(track.id)}
+                        >
+                          {downloadingTracks.has(track.id) ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Download className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -330,21 +343,18 @@ export default function MusicPage() {
           </>
         )}
 
-        {/* Artist detail view */}
+        {/* Artist detail view — album grid */}
         {view === "artist" && (
           <>
             {detailLoading && (
-              <div className="space-y-2">
-                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-xl" />)}
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="aspect-square w-full rounded-xl" />)}
               </div>
             )}
             {!detailLoading && selectedArtist && (
-              <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground font-medium px-1">
-                  {selectedArtist.albums.length} album{selectedArtist.albums.length !== 1 ? "s" : ""}
-                </p>
+              <div className="grid grid-cols-2 gap-3">
                 {selectedArtist.albums.map((album) => (
-                  <AlbumRow key={album.id} album={album} onClick={() => openAlbum(album.id)} />
+                  <AlbumCard key={album.id} album={album} onClick={() => openAlbum(album.id)} />
                 ))}
               </div>
             )}
@@ -352,6 +362,20 @@ export default function MusicPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/* ---------- Components ---------- */
+
+function QualityBadge({ quality }: { quality: { maximumBitDepth: number; maximumSamplingRate: number; isHiRes: boolean } }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={`text-[9px] font-normal gap-0.5 ${quality.isHiRes ? "text-amber-400 border-amber-400/30" : "text-green-400 border-green-400/30"}`}
+    >
+      {quality.isHiRes && <Sparkles className="h-2.5 w-2.5" />}
+      {quality.maximumBitDepth}bit/{quality.maximumSamplingRate}kHz
+    </Badge>
   );
 }
 
@@ -370,9 +394,9 @@ function TrackRow({
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="flex items-center gap-3 p-3">
         {track.albumCover ? (
-          <img src={track.albumCover} alt={track.albumTitle} className="h-10 w-10 rounded-md object-cover shrink-0" />
+          <img src={track.albumCover} alt={track.albumTitle} className="h-11 w-11 rounded-lg object-cover shrink-0" />
         ) : (
-          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
             <Music2 className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
@@ -382,7 +406,7 @@ function TrackRow({
             <span className="truncate">{track.artist}</span>
             {track.albumTitle && (
               <>
-                <span>-</span>
+                <span className="shrink-0">-</span>
                 <button className="truncate hover:text-foreground transition-colors" onClick={onAlbumClick}>
                   {track.albumTitle}
                 </button>
@@ -391,30 +415,15 @@ function TrackRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {track.audioQuality && (
-            <Badge variant="secondary" className={`text-[9px] font-normal gap-0.5 ${track.audioQuality.isHiRes ? "text-amber-400 border-amber-400/30" : "text-green-400 border-green-400/30"}`}>
-              {track.audioQuality.isHiRes && <Sparkles className="h-2.5 w-2.5" />}
-              {track.audioQuality.maximumBitDepth}bit/{track.audioQuality.maximumSamplingRate}kHz
-            </Badge>
-          )}
+          {track.audioQuality && <QualityBadge quality={track.audioQuality} />}
           {track.duration > 0 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 tabular-nums">
               <Clock className="h-2.5 w-2.5" />
               {formatDuration(track.duration)}
             </span>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onDownload}
-            disabled={downloading}
-          >
-            {downloading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="h-3.5 w-3.5" />
-            )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDownload} disabled={downloading}>
+            {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </div>
@@ -422,29 +431,37 @@ function TrackRow({
   );
 }
 
-function AlbumRow({ album, onClick }: { album: MusicAlbum; onClick: () => void }) {
+function AlbumCard({ album, onClick }: { album: MusicAlbum; onClick: () => void }) {
+  const year = album.releaseDate?.slice(0, 4) || album.year;
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-xl border border-border/60 bg-card overflow-hidden text-left hover:bg-accent/50 transition-colors"
+      className="rounded-xl border border-border/60 bg-card overflow-hidden text-left hover:border-border transition-colors group"
     >
-      <div className="flex items-center gap-3 p-3">
+      <div className="aspect-square relative overflow-hidden bg-muted">
         {album.cover ? (
-          <img src={album.cover} alt={album.title} className="h-10 w-10 rounded-md object-cover shrink-0" />
+          <img
+            src={album.cover}
+            alt={album.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         ) : (
-          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-            <Disc3 className="h-4 w-4 text-muted-foreground" />
+          <div className="w-full h-full flex items-center justify-center">
+            <Disc3 className="h-12 w-12 text-muted-foreground/40" />
           </div>
         )}
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium leading-snug truncate">{album.title}</p>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="truncate">{album.artist}</span>
-            {album.releaseDate && <span>{album.releaseDate.slice(0, 4)}</span>}
-            {album.totalTracks && <span>{album.totalTracks} tracks</span>}
-          </div>
+      </div>
+      <div className="p-2.5 space-y-0.5">
+        <p className="text-sm font-medium leading-snug truncate">{album.title}</p>
+        {year && <p className="text-[11px] text-muted-foreground">{year}</p>}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {album.totalTracks && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+              <Clock className="h-2.5 w-2.5" />
+              {album.totalTracks} tracks
+            </span>
+          )}
         </div>
-        <Disc3 className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
     </button>
   );
@@ -458,9 +475,9 @@ function ArtistRow({ artist, onClick }: { artist: MusicArtist; onClick: () => vo
     >
       <div className="flex items-center gap-3 p-3">
         {artist.picture ? (
-          <img src={artist.picture} alt={artist.name} className="h-10 w-10 rounded-full object-cover shrink-0" />
+          <img src={artist.picture} alt={artist.name} className="h-11 w-11 rounded-full object-cover shrink-0" />
         ) : (
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
             <User className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
@@ -468,7 +485,6 @@ function ArtistRow({ artist, onClick }: { artist: MusicArtist; onClick: () => vo
           <p className="text-sm font-medium leading-snug truncate">{artist.name}</p>
           <p className="text-[11px] text-muted-foreground">{artist.albumsCount} albums</p>
         </div>
-        <User className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
     </button>
   );
