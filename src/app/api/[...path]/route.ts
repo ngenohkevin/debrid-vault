@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300; // 5 min timeout for large uploads
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://100.85.91.122:6501";
 
@@ -43,8 +44,13 @@ async function proxyRequest(
 
     if (["POST", "PUT", "PATCH"].includes(request.method)) {
       if (isMultipart) {
-        fetchOptions.body = await request.arrayBuffer();
+        // Stream the body directly to avoid buffering large uploads in memory
+        fetchOptions.body = request.body;
         headers["Content-Type"] = contentType;
+        const contentLength = request.headers.get("content-length");
+        if (contentLength) headers["Content-Length"] = contentLength;
+        // @ts-expect-error -- Node fetch supports duplex streaming
+        fetchOptions.duplex = "half";
       } else {
         const body = await request.text();
         if (body) {
