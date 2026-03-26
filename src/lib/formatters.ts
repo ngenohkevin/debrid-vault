@@ -25,6 +25,13 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+export function formatDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return "--";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     downloading: "text-blue-400",

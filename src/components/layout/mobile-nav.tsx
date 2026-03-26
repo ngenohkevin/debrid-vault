@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Download, Plus, Cloud, FolderOpen, Settings, CalendarClock } from "lucide-react";
+import { Download, Plus, Cloud, FolderOpen, Settings, CalendarClock, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Downloads", icon: Download },
   { href: "/add", label: "Add", icon: Plus },
   { href: "/cloud", label: "Cloud", icon: Cloud },
+  { href: "/music", label: "Music", icon: Music2 },
   { href: "/schedule", label: "Schedule", icon: CalendarClock },
   { href: "/library", label: "Library", icon: FolderOpen },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -27,7 +28,7 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2.5 min-w-[56px] min-h-[44px] justify-center transition-colors",
+                "flex flex-col items-center gap-0.5 px-1.5 py-2.5 min-w-[44px] min-h-[44px] justify-center transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >

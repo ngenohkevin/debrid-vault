@@ -123,6 +123,72 @@ export interface EngineSettings {
   speedLimitMbps: number;
 }
 
+// Music (DAB)
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist: string;
+  artistId: number | string;
+  albumTitle: string;
+  albumCover: string;
+  albumId: string;
+  releaseDate: string;
+  genre: string;
+  duration: number;
+  audioQuality?: {
+    maximumBitDepth: number;
+    maximumSamplingRate: number;
+    isHiRes: boolean;
+  };
+}
+
+export interface MusicAlbum {
+  id: string;
+  title: string;
+  artist: string;
+  artistId?: number | string;
+  cover: string;
+  releaseDate: string;
+  genre: string;
+  type?: string;
+  label?: string;
+  year?: string;
+  totalTracks?: number;
+  totalDiscs?: number;
+  tracks?: MusicTrack[];
+}
+
+export interface MusicArtist {
+  id: number | string;
+  name: string;
+  picture: string;
+  albumsCount: number;
+}
+
+export interface MusicSearchResult {
+  tracks: MusicTrack[];
+  albums: MusicAlbum[];
+  artists: MusicArtist[];
+}
+
+export interface MusicDiscography {
+  artist: MusicArtist;
+  albums: MusicAlbum[];
+}
+
+export interface MusicLyrics {
+  lyrics: string;
+  unsynced: boolean;
+}
+
+export interface MusicAlbumDownloadResult {
+  album: string;
+  artist: string;
+  tracks: number;
+  totalTracks: number;
+  downloads: DownloadItem[];
+}
+
 export type ScheduleStatus = "scheduled" | "running" | "completed" | "cancelled" | "error";
 
 export interface ScheduledDownload {

@@ -106,6 +106,26 @@ export const api = {
       body: JSON.stringify({ scheduledAt, speedLimitMbps }),
     }),
 
+  // Music (DAB)
+  musicSearch: (query: string, type?: string) =>
+    fetchAPI<import("./types").MusicSearchResult>(`/api/music/search?q=${encodeURIComponent(query)}${type ? `&type=${type}` : ""}`),
+  musicAlbum: (id: string) =>
+    fetchAPI<import("./types").MusicAlbum>(`/api/music/album?id=${encodeURIComponent(id)}`),
+  musicArtist: (id: string) =>
+    fetchAPI<import("./types").MusicDiscography>(`/api/music/artist?id=${encodeURIComponent(id)}`),
+  musicDownloadTrack: (trackId: string, quality?: string, folder?: string) =>
+    fetchAPI<import("./types").DownloadItem>("/api/music/download/track", {
+      method: "POST",
+      body: JSON.stringify({ trackId, ...(quality ? { quality } : {}), ...(folder ? { folder } : {}) }),
+    }),
+  musicDownloadAlbum: (albumId: string, quality?: string) =>
+    fetchAPI<import("./types").MusicAlbumDownloadResult>("/api/music/download/album", {
+      method: "POST",
+      body: JSON.stringify({ albumId, ...(quality ? { quality } : {}) }),
+    }),
+  musicLyrics: (title: string, artist: string) =>
+    fetchAPI<import("./types").MusicLyrics>(`/api/music/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`),
+
   getSettings: () => fetchAPI<import("./types").EngineSettings>("/api/settings"),
   updateSettings: (settings: Partial<import("./types").EngineSettings>) =>
     fetchAPI<import("./types").EngineSettings>("/api/settings", {
