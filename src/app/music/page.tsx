@@ -319,6 +319,7 @@ export default function MusicPage() {
                             <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                           )}
                         </div>
+                        {track.audioQuality && <QualityBadge quality={track.audioQuality} />}
                         <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
                           {track.duration > 0 && formatDuration(track.duration)}
                         </span>
