@@ -155,4 +155,9 @@ export const api = {
     }),
 
   getEventsURL: () => `${API_BASE}/api/downloads/events`,
+
+  pauseProvider: (name: string) =>
+    fetchAPI<{ status: string; provider: string }>(`/api/providers/${name}/pause`, { method: "POST" }),
+  resumeProvider: (name: string) =>
+    fetchAPI<{ status: string; provider: string }>(`/api/providers/${name}/resume`, { method: "POST" }),
 };

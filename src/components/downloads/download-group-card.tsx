@@ -1,128 +1,80 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, ChevronDown, ChevronRight, ArrowDown, Check, Tv, Music2, Film, AlertCircle, Loader2, Pause, Play, RefreshCw, CalendarClock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { X, Trash2, ChevronDown, ChevronUp, Check, Pause, Play, Loader2, AlertCircle, Circle } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
 import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
-import { SubtitleBadge } from "./subtitle-badge";
+import { CategoryIcon, getCategoryBarColor } from "@/components/category-icon";
+import { QualityTags } from "@/components/quality-tags";
 import { ProviderBadge } from "@/components/provider-toggle";
 
-function EpisodeRow({ item, onUpdate, slotsAvailable, isMusic }: { item: DownloadItem; onUpdate: () => void; slotsAvailable: number; isMusic?: boolean }) {
+function EpisodeRow({ item, slotsAvailable, onUpdate }: { item: DownloadItem; slotsAvailable: number; onUpdate: () => void }) {
   const percent = Math.round(item.progress * 100);
-  const isRetrying = item.status === "downloading" && item.error?.includes("retry");
-  const isScheduled = item.status === "paused" && !!item.scheduledFor;
+  const barColor = getCategoryBarColor(item.category);
 
-  const handlePause = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await api.pauseDownload(item.id);
-      onUpdate();
-    } catch { /* ignore */ }
-  };
-
-  const handleResume = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await api.resumeDownload(item.id);
-      onUpdate();
-    } catch { /* ignore */ }
-  };
-
-  const handleCancel = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await api.cancelDownload(item.id);
-      onUpdate();
-    } catch { /* ignore */ }
-  };
-
-  const handleRemove = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await api.removeDownload(item.id);
-      onUpdate();
-    } catch { /* ignore */ }
-  };
-
-  const isActive = ["downloading", "resolving", "pending", "moving", "queued"].includes(item.status);
-  const isDone = ["completed", "error", "cancelled"].includes(item.status);
+  const handlePause = async (e: React.MouseEvent) => { e.stopPropagation(); try { await api.pauseDownload(item.id); onUpdate(); } catch {} };
+  const handleResume = async (e: React.MouseEvent) => { e.stopPropagation(); try { await api.resumeDownload(item.id); onUpdate(); } catch {} };
 
   return (
-    <div className="flex items-center gap-2 px-3.5 py-2 text-xs border-b border-border/20 last:border-0">
-      <div className="w-5 shrink-0 flex justify-center">
-        {item.status === "completed" && <Check className="h-3.5 w-3.5 text-green-400" />}
-        {item.status === "downloading" && !isRetrying && (
-          <span className="text-[10px] font-mono text-blue-400">{percent}%</span>
-        )}
-        {item.status === "downloading" && isRetrying && (
-          <RefreshCw className="h-3 w-3 animate-spin text-amber-400" />
-        )}
-        {item.status === "error" && <AlertCircle className="h-3.5 w-3.5 text-red-400" />}
-        {item.status === "resolving" && <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />}
-        {item.status === "moving" && <Loader2 className="h-3 w-3 animate-spin text-purple-400" />}
-        {item.status === "paused" && (
-          isScheduled
-            ? <CalendarClock className="h-3 w-3 text-blue-400" />
-            : percent > 0 ? <span className="text-[10px] font-mono text-amber-400">{percent}%</span> : <Pause className="h-3 w-3 text-amber-400" />
-        )}
-        {item.status === "queued" && <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />}
-        {(item.status === "pending" || item.status === "cancelled") && (
-          <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <p className="truncate text-foreground">{item.name}</p>
-          {!isMusic && <SubtitleBadge status={item.subtitleStatus} size="xs" />}
+    <div className="px-4 py-2.5 border-b border-border-subtle last:border-0">
+      <div className="flex items-center gap-2.5">
+        {/* Status icon */}
+        <div className="w-5 shrink-0 flex justify-center">
+          {item.status === "completed" && <Check className="h-4 w-4 text-accent-green" />}
+          {item.status === "downloading" && <Loader2 className="h-4 w-4 text-accent-blue animate-spin" />}
+          {item.status === "error" && <AlertCircle className="h-4 w-4 text-accent-red" />}
+          {(item.status === "queued" || item.status === "pending") && <Circle className="h-4 w-4 text-fg-muted" />}
+          {item.status === "paused" && <Pause className="h-3.5 w-3.5 text-accent-amber" />}
+          {item.status === "resolving" && <Loader2 className="h-4 w-4 text-accent-amber animate-spin" />}
+          {item.status === "moving" && <Loader2 className="h-4 w-4 text-accent-purple animate-spin" />}
         </div>
-        {isRetrying && (
-          <p className="truncate text-[9px] text-amber-400/80 mt-0.5">{item.error}</p>
-        )}
-        {!isRetrying && item.size > 0 && item.status !== "completed" && (
-          <p className="text-[9px] text-muted-foreground mt-0.5">
-            {item.downloaded > 0
-              ? `${formatBytes(item.downloaded)} / ${formatBytes(item.size)}`
-              : formatBytes(item.size)}
-          </p>
-        )}
-      </div>
-      <div className="shrink-0 flex items-center gap-1">
+
+        {/* Name + size */}
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] text-fg-primary truncate">{item.name}</p>
+        </div>
+
+        {/* Downloaded / Total size */}
+        <span className="text-[11px] font-mono text-fg-muted shrink-0">
+          {item.size > 0 ? `${formatBytes(item.downloaded)} / ${formatBytes(item.size)}` : ""}
+        </span>
+
+        {/* Inline pause/resume for downloading items */}
         {item.status === "downloading" && (
-          <button onClick={handlePause} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Pause">
-            <Pause className="h-3 w-3 text-muted-foreground" />
-          </button>
+          <button onClick={handlePause} className="p-0.5 shrink-0"><Pause className="h-3 w-3 text-fg-muted hover:text-fg-secondary" /></button>
         )}
         {item.status === "paused" && slotsAvailable > 0 && (
-          <button onClick={handleResume} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Resume">
-            <Play className="h-3 w-3 text-blue-400" />
-          </button>
+          <button onClick={handleResume} className="p-0.5 shrink-0"><Play className="h-3 w-3 text-accent-blue" /></button>
         )}
-        {isActive && (
-          <button onClick={handleCancel} className="p-0.5 rounded hover:bg-accent/50 transition-colors" title="Cancel">
-            <X className="h-3 w-3 text-muted-foreground" />
-          </button>
-        )}
-        {isDone && (
-          <button onClick={handleRemove} className="p-0.5 rounded hover:bg-red-500/20 transition-colors" title="Remove">
-            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-400" />
-          </button>
-        )}
-        <span className="text-[10px] text-muted-foreground min-w-[4rem] text-right">
-          {item.status === "downloading" && !isRetrying && formatSpeed(item.speed)}
-          {item.status === "downloading" && isRetrying && <span className="text-amber-400">retrying</span>}
-          {item.status === "completed" && formatBytes(item.size)}
-          {item.status === "error" && <span className="text-red-400">failed</span>}
-          {item.status === "queued" && "queued"}
-          {item.status === "pending" && "waiting"}
-          {item.status === "resolving" && "resolving"}
-          {item.status === "moving" && "moving"}
-          {item.status === "paused" && (isScheduled ? <span className="text-blue-400">scheduled</span> : <span className="text-amber-400">paused</span>)}
-        </span>
+      </div>
+
+      {/* Per-episode progress bar */}
+      <div className="mt-1.5 ml-[30px]">
+        <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              item.status === "completed" ? "bg-accent-green" : item.status === "downloading" ? barColor : "bg-transparent"
+            }`}
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-0.5">
+          {item.status === "downloading" && (
+            <>
+              <span className="text-[10px] font-mono text-accent-blue">{formatSpeed(item.speed)}</span>
+              <span className="text-[10px] font-mono text-fg-muted">ETA {formatETA(item.eta)} {percent}%</span>
+            </>
+          )}
+          {item.status === "completed" && (
+            <span className="text-[10px] font-mono text-accent-green ml-auto">100%</span>
+          )}
+          {(item.status === "queued" || item.status === "pending") && (
+            <span className="text-[10px] font-mono text-fg-muted ml-auto">0%</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -134,7 +86,6 @@ export function DownloadGroupCard({
   items,
   onUpdate,
   slotsAvailable = 1,
-  removing = false,
 }: {
   groupId: string;
   groupName: string;
@@ -143,12 +94,11 @@ export function DownloadGroupCard({
   slotsAvailable?: number;
   removing?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const scheduleLater = useScheduleLater();
 
   const completedCount = items.filter((i) => i.status === "completed").length;
-  const errorCount = items.filter((i) => i.status === "error").length;
   const totalSize = items.reduce((sum, i) => sum + i.size, 0);
   const totalDownloaded = items.reduce((sum, i) => sum + i.downloaded, 0);
   const totalSpeed = items.reduce((sum, i) => sum + i.speed, 0);
@@ -158,146 +108,85 @@ export function DownloadGroupCard({
   const category = items[0]?.category;
   const isMusic = category === "music";
   const itemLabel = isMusic ? "tracks" : "episodes";
+  const barColor = getCategoryBarColor(category);
 
-  const isAllDone = items.every((i) => ["completed", "error", "cancelled"].includes(i.status));
-  const isAllCompleted = items.every((i) => i.status === "completed");
   const hasActive = items.some((i) => ["downloading", "resolving", "pending", "moving", "queued"].includes(i.status));
   const hasDownloading = items.some((i) => i.status === "downloading" || i.status === "queued");
   const hasPaused = items.some((i) => i.status === "paused");
-  const isGroupScheduled = items.some((i) => i.status === "paused" && !!i.scheduledFor);
   const canSchedule = hasActive || hasPaused;
-
-  // ETA: use the max ETA from active downloads
   const maxETA = items.reduce((max, i) => Math.max(max, i.eta), 0);
 
   const handlePauseAll = async () => {
     try {
-      for (const item of items) {
-        if (item.status === "downloading" || item.status === "queued") {
-          await api.pauseDownload(item.id);
-        }
-      }
-      toast.success(`Paused all ${itemLabel}`);
-      onUpdate();
-    } catch {
-      toast.error("Failed to pause");
-    }
+      for (const item of items) { if (item.status === "downloading" || item.status === "queued") await api.pauseDownload(item.id); }
+      toast.success(`Paused all ${itemLabel}`); onUpdate();
+    } catch { toast.error("Failed to pause"); }
   };
-
   const handleResumeAll = async () => {
     try {
-      for (const item of items) {
-        if (item.status === "paused") {
-          await api.resumeDownload(item.id);
-        }
-      }
-      toast.success(`Resumed all ${itemLabel}`);
-      onUpdate();
-    } catch {
-      toast.error("Failed to resume");
-    }
+      for (const item of items) { if (item.status === "paused") await api.resumeDownload(item.id); }
+      toast.success(`Resumed all ${itemLabel}`); onUpdate();
+    } catch { toast.error("Failed to resume"); }
   };
-
   const handleCancelAll = async () => {
     try {
-      for (const item of items) {
-        if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) {
-          await api.cancelDownload(item.id);
-        }
-      }
-      toast.success(`Cancelled all ${itemLabel}`);
-      onUpdate();
-    } catch {
-      toast.error("Failed to cancel");
-    }
+      for (const item of items) { if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) await api.cancelDownload(item.id); }
+      toast.success(`Cancelled all ${itemLabel}`); onUpdate();
+    } catch { toast.error("Failed to cancel"); }
   };
-
   const handleRemoveAll = async () => {
     setIsRemoving(true);
     try {
-      for (const item of items) {
-        if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) {
-          await api.cancelDownload(item.id);
-        }
-      }
-      // Wait for fade animation before removing
+      for (const item of items) { if (["downloading", "resolving", "pending", "moving", "queued"].includes(item.status)) await api.cancelDownload(item.id); }
       await new Promise((r) => setTimeout(r, 300));
-      for (const item of items) {
-        await api.removeDownload(item.id);
-      }
+      for (const item of items) await api.removeDownload(item.id);
       onUpdate();
-    } catch {
-      setIsRemoving(false);
-      toast.error("Failed to remove");
-    }
+    } catch { setIsRemoving(false); toast.error("Failed to remove"); }
   };
 
   return (
-    <div className={`rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95 h-0 mb-0 border-0 p-0" : "opacity-100 scale-100"}`}>
+    <div className={`rounded-2xl border border-border-card bg-surface-secondary overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95" : ""}`}>
       {/* Header */}
-      <div
-        className="flex items-start gap-3 p-3.5 cursor-pointer hover:bg-accent/30 transition-colors"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="mt-0.5 shrink-0">
-          {isMusic ? (
-            <Music2 className="h-4 w-4 text-green-400" />
-          ) : (
-            <Tv className="h-4 w-4 text-purple-400" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-sm font-medium leading-snug line-clamp-2">{groupName}</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="text-[10px] font-normal">
-              {completedCount}/{items.length} {itemLabel}
-            </Badge>
-            <ProviderBadge provider={items[0]?.provider} />
-            {errorCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] font-normal">
-                {errorCount} failed
-              </Badge>
-            )}
-            {totalSize > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                {formatBytes(totalDownloaded)} / {formatBytes(totalSize)}
-              </span>
-            )}
+      <div className="p-4 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <div className="flex items-start gap-3">
+          <CategoryIcon category={category} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-fg-primary leading-snug line-clamp-2">{groupName}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className="text-[9px] font-medium text-fg-muted bg-surface-tertiary px-1.5 py-0.5 rounded-full">{category}</span>
+              <ProviderBadge provider={items[0]?.provider} />
+              <QualityTags name={groupName} />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-0.5 shrink-0">
-          {canSchedule && (
-            <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
-          )}
-          {hasDownloading && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handlePauseAll(); }} title="Pause all">
-              <Pause className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {hasPaused && !hasDownloading && slotsAvailable > 0 && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={(e) => { e.stopPropagation(); handleResumeAll(); }} title="Resume all">
-              <Play className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {hasActive && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleCancelAll(); }} title="Cancel all">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleRemoveAll(); }} title="Delete all">
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
           {expanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp className="h-5 w-5 text-fg-muted shrink-0 mt-1" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-5 w-5 text-fg-muted shrink-0 mt-1" />
           )}
+        </div>
+
+        {/* Overall progress */}
+        <div className="mt-3 space-y-1.5">
+          <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${percent}%` }} />
+          </div>
+          <div className="flex items-center justify-between text-[11px] font-mono text-fg-muted">
+            {hasActive && totalSpeed > 0 ? (
+              <>
+                <span>{formatSpeed(totalSpeed)}</span>
+                <span>ETA {formatETA(maxETA)}</span>
+              </>
+            ) : (
+              <span className="ml-auto">{completedCount}/{items.length} {itemLabel}</span>
+            )}
+            {!hasActive && !hasPaused && <span>{percent}%</span>}
+          </div>
         </div>
       </div>
 
-      {/* Schedule for later form */}
+      {/* Schedule form */}
       {scheduleLater.open && canSchedule && (
-        <div className="px-3.5 pb-2">
+        <div className="px-4 pb-3">
           <ScheduleLaterForm
             downloadId={items[0].id}
             groupId={groupId}
@@ -307,68 +196,48 @@ export function DownloadGroupCard({
         </div>
       )}
 
-      {/* Overall progress bar */}
-      {!isAllCompleted && (
-        <div className="px-3.5 pb-2 space-y-1.5">
-          <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-            <div
-              className={`absolute inset-y-0 left-0 rounded transition-all duration-300 ease-linear ${
-                isAllDone ? (errorCount > 0 ? "bg-red-500/60" : "bg-green-500/80")
-                  : isGroupScheduled && !hasActive ? "bg-blue-500/60"
-                  : hasPaused && !hasActive ? "bg-amber-500/60"
-                  : "bg-blue-500/80"
-              }`}
-              style={{ width: `${percent}%` }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                {percent}% {isGroupScheduled && !hasActive ? "· Scheduled" : hasPaused && !hasActive ? "· Paused" : ""}
-              </span>
-            </div>
-          </div>
-          {isGroupScheduled && !hasActive && (
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{completedCount}/{items.length} done</span>
-              <span className="flex items-center gap-1 text-blue-400">
-                <CalendarClock className="h-3 w-3" />
-                {(() => {
-                  const scheduled = items.find((i) => i.scheduledFor);
-                  return scheduled ? new Date(scheduled.scheduledFor!).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Scheduled";
-                })()}
-              </span>
-            </div>
-          )}
-          {hasActive && totalSpeed > 0 && (
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono tabular-nums">
-              <span className="w-[40%] text-left">{completedCount}/{items.length} done</span>
-              <span className="w-[30%] flex items-center justify-center gap-1">
-                <ArrowDown className="h-3 w-3 text-blue-400 shrink-0" />
-                {formatSpeed(totalSpeed)}
-              </span>
-              <span className="w-[30%] text-right">{formatETA(maxETA)}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isAllCompleted && (
-        <div className="px-3.5 pb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Check className="h-3.5 w-3.5 text-green-400" />
-          <span>All {items.length} {itemLabel} &middot; {formatBytes(totalSize)}</span>
-        </div>
-      )}
-
-      {/* Episode list */}
+      {/* Episode list (expanded) */}
       {expanded && (
-        <div className="border-t border-border/40 bg-muted/20 max-h-72 overflow-y-auto">
+        <div className="border-t border-border-card bg-surface-primary/50 max-h-[400px] overflow-y-auto scrollbar-none">
           {[...items].sort((a, b) => {
             const order: Record<string, number> = { downloading: 0, resolving: 1, queued: 2, paused: 3, moving: 4, pending: 5, error: 6, completed: 7, cancelled: 8 };
             const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
             if (diff !== 0) return diff;
             return a.name.localeCompare(b.name, undefined, { numeric: true });
           }).map((item) => (
-            <EpisodeRow key={item.id} item={item} onUpdate={onUpdate} slotsAvailable={slotsAvailable} isMusic={isMusic} />
+            <EpisodeRow key={item.id} item={item} slotsAvailable={slotsAvailable} onUpdate={onUpdate} />
           ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {(hasActive || hasPaused) && (
+        <div className="flex items-center gap-2 px-4 pb-4 pt-2">
+          {hasDownloading && (
+            <button onClick={(e) => { e.stopPropagation(); handlePauseAll(); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-secondary hover:bg-surface-tertiary transition-colors">
+              <Pause className="h-3 w-3" /> Pause All
+            </button>
+          )}
+          {hasPaused && !hasDownloading && slotsAvailable > 0 && (
+            <button onClick={(e) => { e.stopPropagation(); handleResumeAll(); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-accent-blue hover:bg-surface-tertiary transition-colors">
+              <Play className="h-3 w-3" /> Resume All
+            </button>
+          )}
+          {canSchedule && (
+            <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
+          )}
+          <button onClick={(e) => { e.stopPropagation(); handleCancelAll(); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-accent-red hover:bg-surface-tertiary transition-colors">
+            <X className="h-3 w-3" /> Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Remove all for completed groups */}
+      {!hasActive && !hasPaused && (
+        <div className="flex items-center gap-2 px-4 pb-4">
+          <button onClick={handleRemoveAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-muted hover:text-accent-red hover:bg-surface-tertiary transition-colors">
+            <Trash2 className="h-3 w-3" /> Remove
+          </button>
         </div>
       )}
     </div>

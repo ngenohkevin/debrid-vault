@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -54,45 +53,42 @@ export function ScheduleDialog({ open, onOpenChange, source, category, folder, n
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-surface-secondary border-border-card">
         <DialogHeader>
-          <DialogTitle className="text-base">Schedule Download</DialogTitle>
+          <DialogTitle className="text-[15px] text-fg-primary">Schedule Download</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {name && (
-            <p className="text-sm text-muted-foreground line-clamp-2">{name}</p>
+            <p className="text-[13px] text-fg-secondary line-clamp-2">{name}</p>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Date & Time</label>
+            <label className="text-[11px] font-medium text-fg-muted">Date & Time</label>
             <Input
               type="datetime-local"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
-              className="h-10 text-sm"
+              className="h-10 text-[13px] bg-surface-tertiary border-border-card"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Speed Limit (Mbps)</label>
+            <label className="text-[11px] font-medium text-fg-muted">Speed Limit (Mbps)</label>
             <Input
-              type="number"
-              min={0}
-              step={1}
+              type="number" min={0} step={1}
               value={speedLimit}
               onChange={(e) => setSpeedLimit(parseFloat(e.target.value) || 0)}
               placeholder="0 = unlimited"
-              className="h-10 text-sm"
+              className="h-10 text-[13px] bg-surface-tertiary border-border-card"
             />
-            <p className="text-[10px] text-muted-foreground">0 = unlimited. Sets global speed limit while this download runs.</p>
+            <p className="text-[10px] text-fg-muted">0 = unlimited</p>
           </div>
-          <Button
-            className="w-full h-10"
+          <button
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-blue text-white text-[13px] font-semibold hover:bg-accent-blue/90 transition-colors disabled:opacity-50"
             disabled={submitting}
             onClick={handleSchedule}
           >
-            {submitting ? "Scheduling..." : (
-              <><CalendarClock className="mr-2 h-4 w-4" /> Schedule</>
-            )}
-          </Button>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+            {submitting ? "Scheduling..." : "Schedule"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>

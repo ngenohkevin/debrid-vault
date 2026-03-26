@@ -5,6 +5,7 @@ export type SubtitleStatus = "likely" | "unlikely" | "unknown" | "confirmed" | "
 export interface Provider {
   name: string;
   displayName: string;
+  paused?: boolean;
 }
 
 export interface DownloadItem {

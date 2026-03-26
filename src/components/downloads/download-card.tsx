@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, RotateCcw, ArrowDown, Check, Pause, Play, AlertTriangle, RefreshCw, HardDrive, CalendarClock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Film, Tv, Music2 } from "lucide-react";
+import { X, Trash2, RotateCcw, Check, Pause, Play, RefreshCw, HardDrive, CalendarClock } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
-import { formatBytes, formatSpeed, formatETA, getStatusColor } from "@/lib/formatters";
+import { formatBytes, formatSpeed, formatETA } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useScheduleLater, ScheduleLaterToggle, ScheduleLaterForm } from "./schedule-later";
-import { SubtitleBadge } from "./subtitle-badge";
+import { CategoryIcon, getCategoryBarColor } from "@/components/category-icon";
+import { QualityTags } from "@/components/quality-tags";
 import { ProviderBadge } from "@/components/provider-toggle";
 
 export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: DownloadItem; onUpdate: () => void; slotsAvailable?: number }) {
@@ -20,74 +18,38 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   const isPaused = item.status === "paused";
   const isScheduled = isPaused && !!item.scheduledFor;
   const percent = Math.round(item.progress * 100);
+  const barColor = getCategoryBarColor(item.category);
 
-  // Engine status hint — shown during downloading when retrying/recovering
   const hasStatusHint = item.status === "downloading" && item.error;
   const isRetrying = hasStatusHint && (item.error?.includes("retry") || item.error?.includes("Retrying"));
-  const isRecovered = hasStatusHint && item.error?.includes("recovered");
 
   const handleCancel = async () => {
-    try {
-      await api.cancelDownload(item.id);
-      toast.success("Download cancelled");
-      onUpdate();
-    } catch {
-      toast.error("Failed to cancel");
-    }
+    try { await api.cancelDownload(item.id); toast.success("Download cancelled"); onUpdate(); }
+    catch { toast.error("Failed to cancel"); }
   };
-
   const handleRemove = async () => {
     setIsRemoving(true);
     try {
       if (isActive) await api.cancelDownload(item.id);
       await new Promise((r) => setTimeout(r, 300));
-      await api.removeDownload(item.id);
-      onUpdate();
-    } catch {
-      setIsRemoving(false);
-      toast.error("Failed to remove");
-    }
+      await api.removeDownload(item.id); onUpdate();
+    } catch { setIsRemoving(false); toast.error("Failed to remove"); }
   };
-
   const handlePause = async () => {
-    try {
-      await api.pauseDownload(item.id);
-      toast.success("Download paused");
-      onUpdate();
-    } catch {
-      toast.error("Failed to pause");
-    }
+    try { await api.pauseDownload(item.id); toast.success("Download paused"); onUpdate(); }
+    catch { toast.error("Failed to pause"); }
   };
-
   const handleResume = async () => {
-    try {
-      await api.resumeDownload(item.id);
-      toast.success("Download resumed");
-      onUpdate();
-    } catch {
-      toast.error("Failed to resume");
-    }
+    try { await api.resumeDownload(item.id); toast.success("Download resumed"); onUpdate(); }
+    catch { toast.error("Failed to resume"); }
   };
-
   const handleRetry = async () => {
-    try {
-      await api.removeDownload(item.id);
-      await api.startDownload(item.source, item.category);
-      toast.success("Retrying download");
-      onUpdate();
-    } catch {
-      toast.error("Failed to retry");
-    }
+    try { await api.removeDownload(item.id); await api.startDownload(item.source, item.category); toast.success("Retrying download"); onUpdate(); }
+    catch { toast.error("Failed to retry"); }
   };
-
   const handleRetryMove = async () => {
-    try {
-      await api.retryMove(item.id);
-      toast.success("Retrying move to library");
-      onUpdate();
-    } catch {
-      toast.error("Failed to retry move");
-    }
+    try { await api.retryMove(item.id); toast.success("Retrying move"); onUpdate(); }
+    catch { toast.error("Failed to retry move"); }
   };
 
   const canRetryMove = item.status === "error" && item.error?.includes("staging");
@@ -95,176 +57,122 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
   const scheduleLater = useScheduleLater();
 
   return (
-    <div className={`rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
-      <div className="p-3.5 space-y-2">
+    <div className={`rounded-2xl border border-border-card bg-surface-secondary overflow-hidden transition-all duration-300 ${isRemoving ? "opacity-0 scale-95" : ""}`}>
+      <div className="p-4 space-y-3">
+        {/* Header row */}
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 shrink-0">
-            {item.category === "movies" ? (
-              <Film className="h-4 w-4 text-blue-400" />
-            ) : item.category === "music" ? (
-              <Music2 className="h-4 w-4 text-green-400" />
-            ) : (
-              <Tv className="h-4 w-4 text-purple-400" />
-            )}
-          </div>
+          <CategoryIcon category={item.category} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium leading-snug line-clamp-2">{item.name}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary" className="text-[10px] font-normal">
-                {item.category}
-              </Badge>
+            <p className="text-[13px] font-semibold text-fg-primary leading-snug line-clamp-2">{item.name}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className="text-[9px] font-medium text-fg-muted bg-surface-tertiary px-1.5 py-0.5 rounded-full">{item.category}</span>
               <ProviderBadge provider={item.provider} />
-              <span className={`text-[10px] capitalize ${isScheduled ? "text-blue-400" : getStatusColor(item.status)}`}>{isScheduled ? "scheduled" : item.status}</span>
-              {item.category !== "music" && <SubtitleBadge status={item.subtitleStatus} />}
+              {item.size > 0 && <span className="text-[9px] font-mono text-fg-muted">{formatBytes(item.size)}</span>}
+              <QualityTags name={item.name} />
             </div>
           </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {canSchedule && (
-              <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
-            )}
-            {item.status === "downloading" && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePause} title="Pause">
-                <Pause className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {isPaused && slotsAvailable > 0 && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400" onClick={handleResume} title="Resume">
-                <Play className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {canRetryMove && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-400" onClick={handleRetryMove} title="Retry move to library">
-                <HardDrive className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {(item.status === "error" || item.status === "cancelled") && !canRetryMove && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRetry} title="Retry">
-                <RotateCcw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {isActive && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancel} title="Cancel">
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-            {(isDone || isPaused) && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" onClick={handleRemove} title="Remove">
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
+          {/* Percentage on right */}
+          {item.status === "downloading" && (
+            <span className="text-[13px] font-mono font-semibold text-fg-primary shrink-0">{percent}%</span>
+          )}
         </div>
 
-        {item.status === "downloading" && (
+        {/* Progress bar */}
+        {(item.status === "downloading" || item.status === "moving") && (
           <div className="space-y-1.5">
-            {/* Progress bar — amber when retrying, blue normally */}
-            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
+            <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
               <div
-                className={`absolute inset-y-0 left-0 rounded transition-all duration-300 ease-linear ${
-                  isRetrying ? "bg-amber-500/70" : "bg-blue-500/80"
-                }`}
+                className={`h-full rounded-full transition-all duration-300 ease-linear ${isRetrying ? "bg-accent-amber" : barColor}`}
                 style={{ width: `${percent}%` }}
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                  {percent}%
+            </div>
+            <div className="flex items-center justify-between text-[11px] font-mono text-fg-muted">
+              <span className="flex items-center gap-1">
+                <span className={isRetrying ? "text-accent-amber" : "text-accent-green"}>
+                  {isRetrying ? <RefreshCw className="inline h-3 w-3 animate-spin" /> : `${formatSpeed(item.speed)}`}
                 </span>
-              </div>
-            </div>
-            {/* Stats row */}
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono tabular-nums">
-              <span className="w-[40%] text-left truncate">{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
-              <span className="w-[30%] flex items-center justify-center gap-1">
-                <ArrowDown className="h-3 w-3 text-blue-400 shrink-0" />
-                {formatSpeed(item.speed)}
               </span>
-              <span className="w-[30%] text-right">{formatETA(item.eta)}</span>
+              <span>ETA {formatETA(item.eta)}</span>
             </div>
-            {/* Engine status hint (retries, recovery, errors) */}
-            {hasStatusHint && (
-              <div className={`flex items-center gap-1.5 text-[10px] ${
-                isRecovered ? "text-green-400" : isRetrying ? "text-amber-400" : "text-muted-foreground"
-              }`}>
-                {isRetrying ? (
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : isRecovered ? (
-                  <Check className="h-3 w-3" />
-                ) : (
-                  <AlertTriangle className="h-3 w-3" />
-                )}
-                <span className="truncate">{item.error}</span>
-              </div>
-            )}
           </div>
         )}
 
-        {item.status === "queued" && (
+        {/* Paused bar */}
+        {isPaused && (
           <div className="space-y-1.5">
-            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono text-muted-foreground">Queued</span>
-              </div>
+            <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
+              <div className={`h-full rounded-full ${isScheduled ? "bg-accent-blue" : "bg-accent-amber"}`} style={{ width: `${percent}%` }} />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-fg-muted">
+              <span className="font-mono">{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
+              {isScheduled && (
+                <span className="flex items-center gap-1 text-accent-blue">
+                  <CalendarClock className="h-3 w-3" />
+                  {new Date(item.scheduledFor!).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
             </div>
           </div>
         )}
 
         {item.status === "resolving" && (
-          <div className="space-y-1.5">
-            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-              <div className="absolute inset-0 bg-yellow-500/30 animate-pulse rounded" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono text-yellow-400">Resolving...</span>
-              </div>
-            </div>
+          <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
+            <div className="h-full w-1/3 rounded-full bg-accent-amber animate-pulse" />
           </div>
         )}
 
-        {item.status === "moving" && (
-          <div className="space-y-1.5">
-            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 rounded bg-purple-500/60 transition-all duration-300 ease-linear"
-                style={{ width: `${percent}%` }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                  {item.progress > 0 ? `${percent}% · Moving` : `Moving to ${item.category}...`}
-                </span>
-              </div>
-            </div>
-            {item.progress > 0 && (
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
-                <span className="text-purple-400">Moving to {item.category}</span>
-              </div>
+        {item.status === "queued" && (
+          <div className="h-1 w-full rounded-full bg-surface-tertiary" />
+        )}
+
+        {item.status === "error" && item.error && (
+          <p className="text-[11px] text-accent-red break-all">{item.error}</p>
+        )}
+
+        {item.status === "completed" && (
+          <div className="flex items-center gap-1.5 text-[11px] text-fg-muted">
+            <Check className="h-3.5 w-3.5 text-accent-green" />
+            <span className="font-mono">{formatBytes(item.size)}</span>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        {(isActive || isPaused) && (
+          <div className="flex items-center gap-2">
+            {item.status === "downloading" && (
+              <button onClick={handlePause} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-secondary hover:bg-surface-tertiary transition-colors">
+                <Pause className="h-3 w-3" /> Pause
+              </button>
             )}
+            {isPaused && slotsAvailable > 0 && (
+              <button onClick={handleResume} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-accent-blue hover:bg-surface-tertiary transition-colors">
+                <Play className="h-3 w-3" /> Resume
+              </button>
+            )}
+            {canSchedule && (
+              <ScheduleLaterToggle open={scheduleLater.open} setOpen={scheduleLater.setOpen} />
+            )}
+            <button onClick={handleCancel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-accent-red hover:bg-surface-tertiary transition-colors">
+              <X className="h-3 w-3" /> Cancel
+            </button>
           </div>
         )}
 
-        {isPaused && (
-          <div className="space-y-1.5">
-            <div className="relative h-5 w-full rounded bg-muted/50 overflow-hidden">
-              <div
-                className={`absolute inset-y-0 left-0 rounded ${isScheduled ? "bg-blue-500/60" : "bg-amber-500/60"}`}
-                style={{ width: `${percent}%` }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-mono font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                  {percent}% &middot; {isScheduled ? "Scheduled" : "Paused"}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
-              {isScheduled ? (
-                <span className="flex items-center gap-1 text-blue-400">
-                  <CalendarClock className="h-3 w-3" />
-                  {new Date(item.scheduledFor!).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              ) : (
-                <span className="text-amber-400">Paused</span>
-              )}
-            </div>
+        {isDone && (
+          <div className="flex items-center gap-2">
+            {canRetryMove && (
+              <button onClick={handleRetryMove} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-accent-purple hover:bg-surface-tertiary transition-colors">
+                <HardDrive className="h-3 w-3" /> Retry Move
+              </button>
+            )}
+            {(item.status === "error" || item.status === "cancelled") && !canRetryMove && (
+              <button onClick={handleRetry} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-secondary hover:bg-surface-tertiary transition-colors">
+                <RotateCcw className="h-3 w-3" /> Retry
+              </button>
+            )}
+            <button onClick={handleRemove} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-muted hover:text-accent-red hover:bg-surface-tertiary transition-colors">
+              <Trash2 className="h-3 w-3" /> Remove
+            </button>
           </div>
         )}
 
@@ -275,18 +183,32 @@ export function DownloadCard({ item, onUpdate, slotsAvailable = 1 }: { item: Dow
             onCancel={() => scheduleLater.setOpen(false)}
           />
         )}
-
-        {item.status === "error" && item.error && (
-          <p className="text-xs text-red-400 break-all">{item.error}</p>
-        )}
-
-        {item.status === "completed" && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Check className="h-3.5 w-3.5 text-green-400" />
-            <span>{formatBytes(item.size)}</span>
-          </div>
-        )}
       </div>
+    </div>
+  );
+}
+
+/** Compact history row for completed items */
+export function HistoryRow({ item, onUpdate }: { item: DownloadItem; onUpdate: () => void }) {
+  const handleRemove = async () => {
+    try { await api.removeDownload(item.id); onUpdate(); }
+    catch { toast.error("Failed to remove"); }
+  };
+
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <CategoryIcon category={item.category} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-fg-primary truncate">{item.name}</p>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {item.status === "completed" && <Check className="h-3 w-3 text-accent-green" />}
+          <span className="text-[10px] font-mono text-fg-muted">{formatBytes(item.size)}</span>
+          {item.status === "error" && <span className="text-[10px] text-accent-red">Failed</span>}
+        </div>
+      </div>
+      <button onClick={handleRemove} className="p-1.5 rounded-lg text-fg-muted hover:text-accent-red hover:bg-surface-tertiary transition-colors shrink-0">
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

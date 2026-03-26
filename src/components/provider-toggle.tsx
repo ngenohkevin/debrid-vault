@@ -1,6 +1,7 @@
 "use client";
 
 import type { Provider } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const providerLabel: Record<string, string> = {
   realdebrid: "Real-Debrid",
@@ -19,18 +20,17 @@ export function ProviderToggle({
   if (providers.length <= 1) return null;
 
   return (
-    <div className="inline-flex rounded-lg border border-border overflow-hidden text-xs">
+    <div className="inline-flex rounded-xl border border-border-card overflow-hidden text-[12px]">
       {providers.map((p) => (
         <button
           key={p.name}
           onClick={() => onChange(p.name)}
-          className={`px-3 py-1.5 font-medium transition-colors ${
+          className={cn(
+            "px-3 py-1.5 font-medium transition-colors",
             selected === p.name
-              ? p.name === "torbox"
-                ? "bg-teal-500 text-white"
-                : "bg-blue-500 text-white"
-              : "hover:bg-accent text-muted-foreground"
-          }`}
+              ? "bg-accent-blue text-white"
+              : "text-fg-secondary hover:bg-surface-secondary"
+          )}
         >
           {p.displayName}
         </button>
@@ -45,7 +45,7 @@ export function ProviderBadge({ provider }: { provider?: string }) {
   const label = providerLabel[provider] || provider;
   const color = provider === "torbox"
     ? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-    : "bg-blue-500/15 text-blue-400 border-blue-500/30";
+    : "bg-accent-blue/15 text-accent-blue border-accent-blue/30";
 
   return (
     <span className={`inline-flex items-center px-1.5 py-0 rounded text-[9px] font-semibold border ${color}`}>
