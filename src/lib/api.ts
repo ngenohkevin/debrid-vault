@@ -8,7 +8,7 @@ function getUploadBase(): string {
   const env = process.env.NEXT_PUBLIC_UPLOAD_URL;
   if (env) return env;
   // Auto-detect: if on tailnet, use direct Pi URL
-  return "https://pi.taila26a58.ts.net:6501";
+  return "https://pi.taila26a58.ts.net:6502";
 }
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
