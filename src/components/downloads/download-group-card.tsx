@@ -14,14 +14,15 @@ import { ProviderBadge } from "@/components/provider-toggle";
 function EpisodeRow({ item, slotsAvailable, onUpdate }: { item: DownloadItem; slotsAvailable: number; onUpdate: () => void }) {
   const percent = Math.round(item.progress * 100);
   const barColor = getCategoryBarColor(item.category);
+  const isResolving = item.name === "Resolving link..." || item.name === "Resolving magnet...";
 
   const handlePause = async (e: React.MouseEvent) => { e.stopPropagation(); try { await api.pauseDownload(item.id); onUpdate(); } catch {} };
   const handleResume = async (e: React.MouseEvent) => { e.stopPropagation(); try { await api.resumeDownload(item.id); onUpdate(); } catch {} };
 
   return (
-    <div className="px-4 py-2.5 border-b border-border-subtle last:border-0">
+    <div className="px-4 py-3 border-b border-border-subtle last:border-0">
+      {/* Row 1: icon + name + size + pause button */}
       <div className="flex items-center gap-2.5">
-        {/* Status icon */}
         <div className="w-5 shrink-0 flex justify-center">
           {item.status === "completed" && <Check className="h-4 w-4 text-accent-green" />}
           {item.status === "downloading" && <Loader2 className="h-4 w-4 text-accent-blue animate-spin" />}
@@ -32,53 +33,66 @@ function EpisodeRow({ item, slotsAvailable, onUpdate }: { item: DownloadItem; sl
           {item.status === "moving" && <Loader2 className="h-4 w-4 text-accent-purple animate-spin" />}
         </div>
 
-        {/* Name + size */}
-        <div className="min-w-0 flex-1">
-          <p className="text-[12px] text-fg-primary truncate">
-            {item.name === "Resolving link..." || item.name === "Resolving magnet..." ? (
-              <span className="text-fg-muted italic">Resolving...</span>
-            ) : item.name}
-          </p>
-        </div>
+        <p className="text-[12px] text-fg-primary truncate flex-1 min-w-0">
+          {isResolving ? <span className="text-fg-muted italic">Resolving...</span> : item.name}
+        </p>
 
-        {/* Downloaded / Total size */}
-        <span className="text-[11px] font-mono text-fg-muted shrink-0">
-          {item.size > 0 ? `${formatBytes(item.downloaded)} / ${formatBytes(item.size)}` : ""}
-        </span>
+        {item.size > 0 && (
+          <span className="text-[11px] font-mono text-fg-muted shrink-0">
+            {formatBytes(item.downloaded)} / {formatBytes(item.size)}
+          </span>
+        )}
 
-        {/* Inline pause/resume for downloading items */}
         {item.status === "downloading" && (
-          <button onClick={handlePause} className="p-0.5 shrink-0"><Pause className="h-3 w-3 text-fg-muted hover:text-fg-secondary" /></button>
+          <button onClick={handlePause} className="p-1 shrink-0 rounded hover:bg-surface-tertiary transition-colors">
+            <Pause className="h-3.5 w-3.5 text-fg-muted" />
+          </button>
         )}
         {item.status === "paused" && slotsAvailable > 0 && (
-          <button onClick={handleResume} className="p-0.5 shrink-0"><Play className="h-3 w-3 text-accent-blue" /></button>
+          <button onClick={handleResume} className="p-1 shrink-0 rounded hover:bg-surface-tertiary transition-colors">
+            <Play className="h-3.5 w-3.5 text-accent-blue" />
+          </button>
         )}
       </div>
 
-      {/* Per-episode progress bar */}
-      <div className="mt-1.5 ml-[30px]">
+      {/* Row 2: progress bar */}
+      <div className="mt-2 ml-[30px]">
         <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
-              item.status === "completed" ? "bg-accent-green" : item.status === "downloading" ? barColor : "bg-transparent"
+              item.status === "completed" ? "bg-accent-green"
+                : item.status === "downloading" ? barColor
+                : item.status === "paused" ? "bg-accent-amber"
+                : "bg-transparent"
             }`}
             style={{ width: `${percent}%` }}
           />
         </div>
-        <div className="flex items-center justify-between mt-0.5">
-          {item.status === "downloading" && (
-            <>
-              <span className="text-[10px] font-mono text-accent-blue">{formatSpeed(item.speed)}</span>
-              <span className="text-[10px] font-mono text-fg-muted">ETA {formatETA(item.eta)} {percent}%</span>
-            </>
-          )}
-          {item.status === "completed" && (
-            <span className="text-[10px] font-mono text-accent-green ml-auto">100%</span>
-          )}
-          {(item.status === "queued" || item.status === "pending") && (
-            <span className="text-[10px] font-mono text-fg-muted ml-auto">0%</span>
-          )}
-        </div>
+
+        {/* Row 3: speed + ETA + percentage */}
+        {item.status === "downloading" && (
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-mono text-accent-blue">{formatSpeed(item.speed)}</span>
+            <span className="text-[10px] font-mono text-fg-muted">&middot;</span>
+            <span className="text-[10px] font-mono text-accent-amber">ETA {formatETA(item.eta)}</span>
+            <span className="text-[10px] font-mono text-fg-muted ml-auto">{percent}%</span>
+          </div>
+        )}
+        {item.status === "completed" && (
+          <div className="flex justify-end mt-0.5">
+            <span className="text-[10px] font-mono text-accent-green">100%</span>
+          </div>
+        )}
+        {(item.status === "queued" || item.status === "pending" || item.status === "resolving") && (
+          <div className="flex justify-end mt-0.5">
+            <span className="text-[10px] font-mono text-fg-muted">0%</span>
+          </div>
+        )}
+        {item.status === "paused" && (
+          <div className="flex justify-end mt-0.5">
+            <span className="text-[10px] font-mono text-accent-amber">{percent}%</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -122,7 +136,7 @@ export function DownloadGroupCard({
 
   const handlePauseAll = async () => {
     try {
-      for (const item of items) { if (item.status === "downloading" || item.status === "queued") await api.pauseDownload(item.id); }
+      for (const item of items) { if (["downloading", "queued", "resolving"].includes(item.status)) await api.pauseDownload(item.id); }
       toast.success(`Paused all ${itemLabel}`); onUpdate();
     } catch { toast.error("Failed to pause"); }
   };
@@ -169,7 +183,7 @@ export function DownloadGroupCard({
           )}
         </div>
 
-        {/* Overall progress */}
+        {/* Overall progress bar with count */}
         <div className="mt-3 space-y-1.5">
           <div className="h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
             <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${percent}%` }} />
@@ -180,10 +194,8 @@ export function DownloadGroupCard({
                 <span>{formatSpeed(totalSpeed)}</span>
                 <span>ETA {formatETA(maxETA)}</span>
               </>
-            ) : (
-              <span className="ml-auto">{completedCount}/{items.length} {itemLabel}</span>
-            )}
-            {!hasActive && !hasPaused && <span>{percent}%</span>}
+            ) : null}
+            <span className="ml-auto">{completedCount}/{items.length} {itemLabel}</span>
           </div>
         </div>
       </div>
@@ -202,9 +214,9 @@ export function DownloadGroupCard({
 
       {/* Episode list (expanded) */}
       {expanded && (
-        <div className="border-t border-border-card bg-surface-primary/50 max-h-[400px] overflow-y-auto scrollbar-none">
+        <div className="border-t border-border-card bg-surface-primary/50 max-h-[500px] overflow-y-auto scrollbar-none">
           {[...items].sort((a, b) => {
-            const order: Record<string, number> = { downloading: 0, resolving: 1, queued: 2, paused: 3, moving: 4, pending: 5, error: 6, completed: 7, cancelled: 8 };
+            const order: Record<string, number> = { downloading: 0, resolving: 1, queued: 2, paused: 3, moving: 4, pending: 5, completed: 6, error: 7, cancelled: 8 };
             const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
             if (diff !== 0) return diff;
             return a.name.localeCompare(b.name, undefined, { numeric: true });
@@ -236,7 +248,7 @@ export function DownloadGroupCard({
         </div>
       )}
 
-      {/* Remove all for completed groups */}
+      {/* Remove for completed groups */}
       {!hasActive && !hasPaused && (
         <div className="flex items-center gap-2 px-4 pb-4">
           <button onClick={handleRemoveAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-card text-[11px] text-fg-muted hover:text-accent-red hover:bg-surface-tertiary transition-colors">
