@@ -125,6 +125,16 @@ export const api = {
     }),
   musicLyrics: (title: string, artist: string) =>
     fetchAPI<import("./types").MusicLyrics>(`/api/music/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`),
+  musicScheduleTrack: (params: { trackId: string; title: string; artist: string; album?: string; trackNumber?: number; scheduledAt: string; speedLimitMbps?: number }) =>
+    fetchAPI<import("./types").ScheduledDownload>("/api/music/schedule/track", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+  musicScheduleAlbum: (params: { albumId: string; title?: string; artist?: string; scheduledAt: string; speedLimitMbps?: number }) =>
+    fetchAPI<import("./types").ScheduledDownload>("/api/music/schedule/album", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
 
   getSettings: () => fetchAPI<import("./types").EngineSettings>("/api/settings"),
   updateSettings: (settings: Partial<import("./types").EngineSettings>) =>

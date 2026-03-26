@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Search, X, Music2, Disc3, Download, User, Clock, Sparkles, ChevronLeft, Loader2 } from "lucide-react";
+import { Search, X, Music2, Disc3, Download, User, Clock, Sparkles, ChevronLeft, Loader2, CalendarClock } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { MusicTrack, MusicAlbum, MusicArtist, MusicDiscography } from "@/lib/types";
 import { formatDuration } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -111,6 +112,55 @@ export default function MusicPage() {
     });
   };
 
+  // Schedule state
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleTarget, setScheduleTarget] = useState<{ type: "track"; track: MusicTrack; trackNumber?: number } | { type: "album"; album: MusicAlbum } | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+
+  const openSchedule = (target: typeof scheduleTarget) => {
+    setScheduleTarget(target);
+    const now = new Date();
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    setScheduleDate(now.toISOString().slice(0, 10));
+    setScheduleTime(now.toTimeString().slice(0, 5));
+    setScheduleOpen(true);
+  };
+
+  const submitSchedule = async () => {
+    if (!scheduleTarget || !scheduleDate || !scheduleTime) return;
+    const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    setScheduling(true);
+    try {
+      if (scheduleTarget.type === "track") {
+        const t = scheduleTarget.track;
+        await api.musicScheduleTrack({
+          trackId: t.id,
+          title: t.title,
+          artist: t.artist,
+          album: t.albumTitle,
+          trackNumber: scheduleTarget.trackNumber || 1,
+          scheduledAt,
+        });
+        toast.success("Track scheduled");
+      } else {
+        const a = scheduleTarget.album;
+        await api.musicScheduleAlbum({
+          albumId: a.id,
+          title: a.title,
+          artist: a.artist,
+          scheduledAt,
+        });
+        toast.success("Album scheduled");
+      }
+      setScheduleOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Schedule failed");
+    }
+    setScheduling(false);
+  };
+
   const goBack = () => {
     setView("search");
     setSelectedAlbum(null);
@@ -202,6 +252,7 @@ export default function MusicPage() {
                     track={track}
                     downloading={downloadingTracks.has(track.id)}
                     onDownload={() => downloadTrack(track)}
+                    onSchedule={() => openSchedule({ type: "track", track })}
                     onAlbumClick={() => track.albumId && openAlbum(track.albumId)}
                   />
                 ))}
@@ -305,6 +356,14 @@ export default function MusicPage() {
                       <><Download className="h-3.5 w-3.5 mr-1.5" /> Download Album (FLAC)</>
                     )}
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                    onClick={() => openSchedule({ type: "album", album: selectedAlbum })}
+                  >
+                    <CalendarClock className="h-3.5 w-3.5 mr-1.5" /> Schedule for Later
+                  </Button>
                 </div>
 
                 {/* Track list */}
@@ -363,6 +422,34 @@ export default function MusicPage() {
           </>
         )}
       </div>
+
+      {/* Schedule Dialog */}
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Schedule {scheduleTarget?.type === "album" ? "Album" : "Track"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground truncate">
+            {scheduleTarget?.type === "track"
+              ? `${scheduleTarget.track.artist} - ${scheduleTarget.track.title}`
+              : scheduleTarget?.type === "album"
+                ? `${scheduleTarget.album.artist} - ${scheduleTarget.album.title}`
+                : ""}
+          </p>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="flex-1" />
+              <Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-28" />
+            </div>
+            <Button className="w-full" onClick={submitSchedule} disabled={scheduling}>
+              {scheduling ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CalendarClock className="h-3.5 w-3.5 mr-1.5" />}
+              Schedule Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
@@ -385,11 +472,13 @@ function TrackRow({
   track,
   downloading,
   onDownload,
+  onSchedule,
   onAlbumClick,
 }: {
   track: MusicTrack;
   downloading: boolean;
   onDownload: () => void;
+  onSchedule?: () => void;
   onAlbumClick?: () => void;
 }) {
   return (
@@ -423,6 +512,11 @@ function TrackRow({
               <Clock className="h-2.5 w-2.5" />
               {formatDuration(track.duration)}
             </span>
+          )}
+          {onSchedule && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={onSchedule}>
+              <CalendarClock className="h-3.5 w-3.5" />
+            </Button>
           )}
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDownload} disabled={downloading}>
             {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
