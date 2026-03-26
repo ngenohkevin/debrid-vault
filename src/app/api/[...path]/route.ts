@@ -25,7 +25,9 @@ async function proxyRequest(
 
   try {
     const headers: HeadersInit = {};
-    if (!isSSE) {
+    const contentType = request.headers.get("content-type") || "";
+    const isMultipart = contentType.includes("multipart/form-data");
+    if (!isSSE && !isMultipart) {
       headers["Content-Type"] = "application/json";
     }
     const apiKey = process.env.API_KEY;
@@ -40,16 +42,21 @@ async function proxyRequest(
     };
 
     if (["POST", "PUT", "PATCH"].includes(request.method)) {
-      const body = await request.text();
-      if (body) {
-        fetchOptions.body = body;
+      if (isMultipart) {
+        fetchOptions.body = await request.arrayBuffer();
+        headers["Content-Type"] = contentType;
+      } else {
+        const body = await request.text();
+        if (body) {
+          fetchOptions.body = body;
+        }
       }
     }
 
     const response = await fetch(url.toString(), fetchOptions);
 
-    const contentType = response.headers.get("content-type");
-    if (contentType?.includes("text/event-stream") || isSSE) {
+    const responseContentType = response.headers.get("content-type") || "";
+    if (responseContentType.includes("text/event-stream") || isSSE) {
       if (!response.body) {
         return NextResponse.json(
           { error: "No response body from backend" },
@@ -68,7 +75,6 @@ async function proxyRequest(
       });
     }
 
-    const responseContentType = response.headers.get("content-type") || "";
     if (!responseContentType.includes("application/json")) {
       // Non-JSON response (e.g. Cloudflare error page) — return clean error
       return NextResponse.json(

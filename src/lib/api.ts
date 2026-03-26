@@ -125,6 +125,17 @@ export const api = {
     }),
   musicLyrics: (title: string, artist: string) =>
     fetchAPI<import("./types").MusicLyrics>(`/api/music/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`),
+  musicUpload: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return fetch(`${API_BASE}/api/music/upload`, { method: "POST", body: form }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `Upload failed (${res.status})` }));
+        throw new Error(body.error || `Upload failed (${res.status})`);
+      }
+      return res.json() as Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>;
+    });
+  },
   musicScheduleTrack: (params: { trackId: string; title: string; artist: string; album?: string; trackNumber?: number; scheduledAt: string; speedLimitMbps?: number }) =>
     fetchAPI<import("./types").ScheduledDownload>("/api/music/schedule/track", {
       method: "POST",

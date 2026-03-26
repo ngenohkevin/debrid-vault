@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, X, Music2, Disc3, Download, User, Clock, Sparkles, ChevronLeft, Loader2, CalendarClock } from "lucide-react";
+import { useState, useRef } from "react";
+import { Search, X, Music2, Disc3, Download, User, Clock, Sparkles, ChevronLeft, Loader2, CalendarClock, Upload } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,24 @@ export default function MusicPage() {
     toast.success(`Queued ${success}/${selectedTracks.size} tracks`);
     setSelectedTracks(new Set());
     setBatchDownloading(false);
+  };
+
+  // Upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await api.musicUpload(file);
+      toast.success(`Uploaded ${result.tracks} track${result.tracks !== 1 ? "s" : ""} to ${result.artist}/${result.album}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSearch = async (e?: React.FormEvent, typeOverride?: SearchType) => {
@@ -263,6 +281,25 @@ export default function MusicPage() {
                 )}
               </div>
             </form>
+
+            {/* Upload from Lucida */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip,.flac,.mp3,.m4a,.wav"
+              className="hidden"
+              onChange={handleUpload}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+              {uploading ? "Uploading..." : "Upload Music (ZIP/FLAC)"}
+            </Button>
 
             <div className="flex rounded-lg border border-border overflow-hidden text-xs">
               {(["track", "album", "artist"] as SearchType[]).map((t) => (
