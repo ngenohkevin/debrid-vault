@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, X, Music2, Disc3, Download, User, Loader2, CalendarClock, Upload, ChevronLeft } from "lucide-react";
+import { Search, X, Music2, Disc3, Download, User, Loader2, CalendarClock, Upload, ChevronLeft, Check, FolderOpen, FileArchive, Tag, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,18 +37,38 @@ export default function MusicPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState<"idle" | "uploading" | "processing" | "done" | "error">("idle");
+  const [uploadResult, setUploadResult] = useState<{ artist: string; album: string; tracks: number; files: string[] } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setUploadProgress(0);
+    setUploadStep("uploading");
+    setUploadResult(null);
+    setUploadError(null);
     try {
-      const result = await api.musicUpload(file, (percent) => setUploadProgress(percent));
-      toast.success(`Uploaded ${result.tracks} track${result.tracks !== 1 ? "s" : ""} to ${result.artist}/${result.album}`);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
+      const result = await api.musicUpload(file, (percent) => {
+        setUploadProgress(percent);
+        if (percent >= 100) setUploadStep("processing");
+      });
+      setUploadResult(result);
+      setUploadStep("done");
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      setUploadStep("error");
+    }
     setUploading(false);
-    setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const dismissUpload = () => {
+    setUploadStep("idle");
+    setUploadResult(null);
+    setUploadError(null);
+    setUploadProgress(0);
   };
 
   // Schedule
@@ -170,6 +191,75 @@ export default function MusicPage() {
         )}
 
         {/* Search view */}
+        {/* Upload status card */}
+        {uploadStep !== "idle" && (
+          <div className="rounded-2xl border border-border-card bg-surface-secondary p-4 space-y-3">
+            {/* Step indicators */}
+            <div className="space-y-2.5">
+              <UploadStepRow
+                icon={<Upload className="h-3.5 w-3.5" />}
+                label="Uploading file"
+                status={uploadStep === "uploading" ? "active" : "done"}
+                detail={uploadStep === "uploading" ? `${uploadProgress}%` : undefined}
+              />
+              {uploadStep === "uploading" && (
+                <div className="ml-[26px] h-1 w-full rounded-full bg-surface-tertiary overflow-hidden">
+                  <div className="h-full rounded-full bg-accent-blue transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                </div>
+              )}
+              <UploadStepRow
+                icon={<FileArchive className="h-3.5 w-3.5" />}
+                label="Extracting files"
+                status={uploadStep === "uploading" ? "pending" : uploadStep === "processing" ? "active" : "done"}
+              />
+              <UploadStepRow
+                icon={<Tag className="h-3.5 w-3.5" />}
+                label="Reading metadata"
+                status={uploadStep === "uploading" ? "pending" : uploadStep === "processing" ? "active" : "done"}
+              />
+              <UploadStepRow
+                icon={<FolderOpen className="h-3.5 w-3.5" />}
+                label="Organizing to library"
+                status={uploadStep === "uploading" || uploadStep === "processing" ? "pending" : "done"}
+              />
+            </div>
+
+            {/* Error */}
+            {uploadStep === "error" && uploadError && (
+              <div className="rounded-xl bg-accent-red/10 p-3">
+                <p className="text-[12px] text-accent-red">{uploadError}</p>
+              </div>
+            )}
+
+            {/* Done result */}
+            {uploadStep === "done" && uploadResult && (
+              <div className="rounded-xl bg-accent-green/10 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-accent-green" />
+                  <span className="text-[13px] font-semibold text-fg-primary">Upload complete</span>
+                </div>
+                <div className="text-[12px] text-fg-secondary space-y-0.5 ml-6">
+                  <p><span className="text-fg-muted">Artist:</span> {uploadResult.artist}</p>
+                  <p><span className="text-fg-muted">Album:</span> {uploadResult.album}</p>
+                  <p><span className="text-fg-muted">Tracks:</span> {uploadResult.tracks} files</p>
+                </div>
+                <div className="flex items-center gap-2 ml-6 mt-1">
+                  <Link href="/library?category=music" className="flex items-center gap-1.5 text-[11px] text-accent-blue hover:underline">
+                    View in Library <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Dismiss */}
+            {(uploadStep === "done" || uploadStep === "error") && (
+              <button onClick={dismissUpload} className="text-[11px] text-fg-muted hover:text-fg-secondary transition-colors">
+                Dismiss
+              </button>
+            )}
+          </div>
+        )}
+
         {view === "search" && (
           <>
             {/* Search bar */}
@@ -480,5 +570,23 @@ function ArtistRow({ artist, onClick }: { artist: MusicArtist; onClick: () => vo
         </div>
       </div>
     </button>
+  );
+}
+
+function UploadStepRow({ icon, label, status, detail }: {
+  icon: React.ReactNode; label: string; status: "pending" | "active" | "done"; detail?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className={cn("w-5 flex justify-center",
+        status === "done" ? "text-accent-green" : status === "active" ? "text-accent-blue" : "text-fg-muted/40"
+      )}>
+        {status === "done" ? <Check className="h-4 w-4" /> : status === "active" ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      </div>
+      <span className={cn("text-[12px]",
+        status === "done" ? "text-fg-secondary" : status === "active" ? "text-fg-primary font-medium" : "text-fg-muted"
+      )}>{label}</span>
+      {detail && <span className="text-[11px] font-mono text-accent-blue ml-auto">{detail}</span>}
+    </div>
   );
 }
