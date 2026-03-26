@@ -32,6 +32,53 @@ export default function MusicPage() {
   const [downloadingTracks, setDownloadingTracks] = useState<Set<string>>(new Set());
   const [downloadingAlbums, setDownloadingAlbums] = useState<Set<string>>(new Set());
 
+  // Batch selection
+  const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
+  const [batchDownloading, setBatchDownloading] = useState(false);
+
+  const toggleTrackSelection = (trackId: string) => {
+    setSelectedTracks((s) => {
+      const next = new Set(s);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+  };
+
+  const selectAllTracks = () => {
+    const allIds = (view === "album" && selectedAlbum?.tracks)
+      ? selectedAlbum.tracks.map((t) => t.id)
+      : tracks.map((t) => t.id);
+    setSelectedTracks((s) => s.size === allIds.length ? new Set() : new Set(allIds));
+  };
+
+  const batchDownload = async () => {
+    if (selectedTracks.size === 0) return;
+    setBatchDownloading(true);
+    const trackList = view === "album" && selectedAlbum?.tracks
+      ? selectedAlbum.tracks.filter((t) => selectedTracks.has(t.id))
+      : tracks.filter((t) => selectedTracks.has(t.id));
+    let success = 0;
+    for (const track of trackList) {
+      try {
+        const idx = selectedAlbum?.tracks
+          ? selectedAlbum.tracks.findIndex((t) => t.id === track.id) + 1
+          : 1;
+        await api.musicDownloadTrack({
+          trackId: track.id,
+          title: track.title,
+          artist: track.artist,
+          album: track.albumTitle || selectedAlbum?.title,
+          trackNumber: idx,
+        });
+        success++;
+      } catch { /* skip failed */ }
+    }
+    toast.success(`Queued ${success}/${selectedTracks.size} tracks`);
+    setSelectedTracks(new Set());
+    setBatchDownloading(false);
+  };
+
   const handleSearch = async (e?: React.FormEvent, typeOverride?: SearchType) => {
     e?.preventDefault();
     if (!search.trim()) return;
@@ -43,6 +90,7 @@ export default function MusicPage() {
       setTracks(result.tracks || []);
       setAlbums(result.albums || []);
       setArtists(result.artists || []);
+      setSelectedTracks(new Set());
     } catch {
       toast.error("Search failed");
     }
@@ -245,12 +293,19 @@ export default function MusicPage() {
             {/* Track results */}
             {!loading && tracks.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground font-medium px-1">Tracks</p>
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs text-muted-foreground font-medium">Tracks</p>
+                  <button onClick={selectAllTracks} className="text-[10px] text-primary hover:underline">
+                    {selectedTracks.size === tracks.length ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
                 {tracks.map((track) => (
                   <TrackRow
                     key={track.id}
                     track={track}
                     downloading={downloadingTracks.has(track.id)}
+                    selected={selectedTracks.has(track.id)}
+                    onToggle={() => toggleTrackSelection(track.id)}
                     onDownload={() => downloadTrack(track)}
                     onSchedule={() => openSchedule({ type: "track", track })}
                     onAlbumClick={() => track.albumId && openAlbum(track.albumId)}
@@ -423,6 +478,20 @@ export default function MusicPage() {
         )}
       </div>
 
+      {/* Batch action bar */}
+      {selectedTracks.size > 0 && (
+        <div className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 z-40 bg-card border border-border rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3">
+          <span className="text-sm font-medium">{selectedTracks.size} selected</span>
+          <Button size="sm" onClick={batchDownload} disabled={batchDownloading}>
+            {batchDownloading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1.5" />}
+            Download
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedTracks(new Set())}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       {/* Schedule Dialog */}
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent className="max-w-sm">
@@ -471,19 +540,30 @@ function QualityBadge({ quality }: { quality: { maximumBitDepth: number; maximum
 function TrackRow({
   track,
   downloading,
+  selected,
+  onToggle,
   onDownload,
   onSchedule,
   onAlbumClick,
 }: {
   track: MusicTrack;
   downloading: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
   onDownload: () => void;
   onSchedule?: () => void;
   onAlbumClick?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+    <div className={`rounded-xl border bg-card overflow-hidden ${selected ? "border-primary/50" : "border-border/60"}`}>
       <div className="flex items-center gap-3 p-3">
+        {onToggle && (
+          <button onClick={onToggle} className="shrink-0">
+            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${selected ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
+              {selected && <span className="text-[10px] text-primary-foreground font-bold">&#10003;</span>}
+            </div>
+          </button>
+        )}
         {track.albumCover ? (
           <img src={track.albumCover} alt={track.albumTitle} className="h-11 w-11 rounded-lg object-cover shrink-0" />
         ) : (
