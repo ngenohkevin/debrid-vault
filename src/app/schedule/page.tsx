@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CalendarClock, X, Trash2, Check, Pencil, RotateCcw } from "lucide-react";
+import { CalendarClock, X, Trash2, Check, Pencil, RotateCcw, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryIcon } from "@/components/category-icon";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { ScheduledDownload, Category } from "@/lib/types";
@@ -217,7 +218,11 @@ export default function SchedulePage() {
   return (
     <AppShell>
       <div className="p-5 md:p-8 space-y-5 max-w-2xl mx-auto">
-        <PageHeader title="Schedule" />
+        <PageHeader title="Schedule">
+          <Link href="/add" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-blue text-white text-[12px] font-medium hover:bg-accent-blue/90 transition-colors">
+            <Plus className="h-3.5 w-3.5" /> New
+          </Link>
+        </PageHeader>
 
         {loading && (
           <div className="space-y-3">
