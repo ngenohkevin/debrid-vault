@@ -183,8 +183,8 @@ export default function MusicPage() {
             {loading && (
               <div className="space-y-2">
                 {searchType === "album" ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-square w-full rounded-xl" />)}
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)}
                   </div>
                 ) : (
                   [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[64px] w-full rounded-xl" />)
@@ -212,7 +212,7 @@ export default function MusicPage() {
             {!loading && albums.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium px-1">Albums</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   {albums.map((album) => (
                     <AlbumCard key={album.id} album={album} onClick={() => openAlbum(album.id)} />
                   ))}
@@ -438,7 +438,7 @@ function AlbumCard({ album, onClick }: { album: MusicAlbum; onClick: () => void 
   return (
     <button
       onClick={onClick}
-      className="rounded-xl border border-border/60 bg-card overflow-hidden text-left hover:border-border transition-colors group"
+      className="rounded-lg border border-border/60 bg-card overflow-hidden text-left hover:border-border transition-colors group"
     >
       <div className="aspect-square relative overflow-hidden bg-muted">
         {album.cover ? (
@@ -449,19 +449,22 @@ function AlbumCard({ album, onClick }: { album: MusicAlbum; onClick: () => void 
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Disc3 className="h-12 w-12 text-muted-foreground/40" />
+            <Disc3 className="h-8 w-8 text-muted-foreground/40" />
           </div>
         )}
       </div>
-      <div className="p-2.5 space-y-0.5">
-        <p className="text-sm font-medium leading-snug truncate">{album.title}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{album.artist}{year ? ` \u00b7 ${year}` : ""}</p>
-        {album.totalTracks && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-            <Clock className="h-2.5 w-2.5" />
-            {album.totalTracks} tracks
-          </span>
-        )}
+      <div className="px-2 py-1.5 space-y-0.5">
+        <p className="text-xs font-medium leading-snug truncate">{album.title}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{album.artist}</p>
+        <div className="flex items-center gap-1 flex-wrap">
+          {year && <span className="text-[10px] text-muted-foreground">{year}</span>}
+          {album.totalTracks && (
+            <span className="text-[10px] text-muted-foreground">{album.totalTracks} tracks</span>
+          )}
+          {album.genre && (
+            <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5">{album.genre}</Badge>
+          )}
+        </div>
       </div>
     </button>
   );
