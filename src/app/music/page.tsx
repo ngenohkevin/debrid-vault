@@ -35,6 +35,7 @@ export default function MusicPage() {
 
   // Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAbortRef = useRef<(() => void) | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStep, setUploadStep] = useState<"idle" | "uploading" | "processing" | "done" | "error">("idle");
@@ -50,17 +51,32 @@ export default function MusicPage() {
     setUploadResult(null);
     setUploadError(null);
     try {
-      const result = await api.musicUpload(file, (percent) => {
+      const { promise, abort } = api.musicUpload(file, (percent) => {
         setUploadProgress(percent);
         if (percent >= 100) setUploadStep("processing");
       });
+      uploadAbortRef.current = abort;
+      const result = await promise;
       setUploadResult(result);
       setUploadStep("done");
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
-      setUploadStep("error");
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      if (msg !== "Upload cancelled") {
+        setUploadError(msg);
+        setUploadStep("error");
+      }
     }
+    uploadAbortRef.current = null;
     setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleCancelUpload = () => {
+    uploadAbortRef.current?.();
+    uploadAbortRef.current = null;
+    setUploading(false);
+    setUploadStep("idle");
+    setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -251,7 +267,12 @@ export default function MusicPage() {
               </div>
             )}
 
-            {/* Dismiss */}
+            {/* Cancel / Dismiss */}
+            {(uploadStep === "uploading" || uploadStep === "processing") && (
+              <button onClick={handleCancelUpload} className="flex items-center gap-1.5 text-[11px] text-accent-red hover:text-accent-red/80 transition-colors">
+                <X className="h-3 w-3" /> Cancel upload
+              </button>
+            )}
             {(uploadStep === "done" || uploadStep === "error") && (
               <button onClick={dismissUpload} className="text-[11px] text-fg-muted hover:text-fg-secondary transition-colors">
                 Dismiss

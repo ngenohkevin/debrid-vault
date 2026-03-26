@@ -125,9 +125,9 @@ export const api = {
     }),
   musicLyrics: (title: string, artist: string) =>
     fetchAPI<import("./types").MusicLyrics>(`/api/music/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`),
-  musicUpload: (file: File, onProgress?: (percent: number) => void) => {
-    return new Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+  musicUpload: (file: File, onProgress?: (percent: number) => void): { promise: Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>; abort: () => void } => {
+    const xhr = new XMLHttpRequest();
+    const promise = new Promise<{ artist: string; album: string; tracks: number; path: string; files: string[] }>((resolve, reject) => {
       const form = new FormData();
       form.append("file", file);
 
@@ -150,6 +150,7 @@ export const api = {
       xhr.open("POST", `${API_BASE}/api/music/upload`);
       xhr.send(form);
     });
+    return { promise, abort: () => xhr.abort() };
   },
   musicScheduleTrack: (params: { trackId: string; title: string; artist: string; album?: string; trackNumber?: number; scheduledAt: string; speedLimitMbps?: number }) =>
     fetchAPI<import("./types").ScheduledDownload>("/api/music/schedule/track", {
