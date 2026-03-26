@@ -34,7 +34,11 @@ function EpisodeRow({ item, slotsAvailable, onUpdate }: { item: DownloadItem; sl
 
         {/* Name + size */}
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] text-fg-primary truncate">{item.name}</p>
+          <p className="text-[12px] text-fg-primary truncate">
+            {item.name === "Resolving link..." || item.name === "Resolving magnet..." ? (
+              <span className="text-fg-muted italic">Resolving...</span>
+            ) : item.name}
+          </p>
         </div>
 
         {/* Downloaded / Total size */}
