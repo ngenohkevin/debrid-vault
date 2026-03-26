@@ -31,13 +31,14 @@ export default function MusicPage() {
   const [downloadingTracks, setDownloadingTracks] = useState<Set<string>>(new Set());
   const [downloadingAlbums, setDownloadingAlbums] = useState<Set<string>>(new Set());
 
-  const handleSearch = async (e?: React.FormEvent) => {
+  const handleSearch = async (e?: React.FormEvent, typeOverride?: SearchType) => {
     e?.preventDefault();
     if (!search.trim()) return;
+    const type = typeOverride || searchType;
     setLoading(true);
     setView("search");
     try {
-      const result = await api.musicSearch(search, searchType);
+      const result = await api.musicSearch(search, type);
       setTracks(result.tracks || []);
       setAlbums(result.albums || []);
       setArtists(result.artists || []);
@@ -169,7 +170,7 @@ export default function MusicPage() {
               {(["track", "album", "artist"] as SearchType[]).map((t) => (
                 <button
                   key={t}
-                  onClick={() => { setSearchType(t); if (search) handleSearch(); }}
+                  onClick={() => { setSearchType(t); if (search) handleSearch(undefined, t); }}
                   className={`px-3 py-1.5 capitalize transition-colors flex-1 ${
                     searchType === t ? "bg-primary text-primary-foreground" : "hover:bg-accent"
                   }`}
@@ -453,15 +454,13 @@ function AlbumCard({ album, onClick }: { album: MusicAlbum; onClick: () => void 
       </div>
       <div className="p-2.5 space-y-0.5">
         <p className="text-sm font-medium leading-snug truncate">{album.title}</p>
-        {year && <p className="text-[11px] text-muted-foreground">{year}</p>}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {album.totalTracks && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-              <Clock className="h-2.5 w-2.5" />
-              {album.totalTracks} tracks
-            </span>
-          )}
-        </div>
+        <p className="text-[11px] text-muted-foreground truncate">{album.artist}{year ? ` \u00b7 ${year}` : ""}</p>
+        {album.totalTracks && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+            <Clock className="h-2.5 w-2.5" />
+            {album.totalTracks} tracks
+          </span>
+        )}
       </div>
     </button>
   );
