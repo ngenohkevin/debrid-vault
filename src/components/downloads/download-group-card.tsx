@@ -136,7 +136,8 @@ export function DownloadGroupCard({
 
   const handlePauseAll = async () => {
     try {
-      for (const item of items) { if (["downloading", "queued", "resolving"].includes(item.status)) await api.pauseDownload(item.id); }
+      const toPause = items.filter((i) => ["downloading", "queued", "resolving", "pending", "moving"].includes(i.status));
+      await Promise.all(toPause.map((i) => api.pauseDownload(i.id).catch(() => {})));
       toast.success(`Paused all ${itemLabel}`); onUpdate();
     } catch { toast.error("Failed to pause"); }
   };
