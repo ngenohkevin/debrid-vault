@@ -141,6 +141,7 @@ export interface MusicTrack {
     maximumSamplingRate: number;
     isHiRes: boolean;
   };
+  audioModes?: string[];
 }
 
 export interface MusicAlbum {
@@ -157,6 +158,8 @@ export interface MusicAlbum {
   totalTracks?: number;
   totalDiscs?: number;
   tracks?: MusicTrack[];
+  audioModes?: string[];
+  mediaTags?: string[];
 }
 
 export interface MusicArtist {

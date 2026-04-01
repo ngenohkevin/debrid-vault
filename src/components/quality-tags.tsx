@@ -84,3 +84,34 @@ export function AudioQualityBadge({ bitDepth, sampleRate }: { bitDepth: number; 
     </span>
   );
 }
+
+export function AudioModeBadges({ modes, mediaTags }: { modes?: string[]; mediaTags?: string[] }) {
+  const badges: { label: string; type: "quality" | "hires" | "codec" }[] = [];
+
+  if (mediaTags?.includes("HIRES_LOSSLESS")) {
+    badges.push({ label: "Hi-Res", type: "hires" });
+  }
+
+  if (modes?.includes("DOLBY_ATMOS")) {
+    badges.push({ label: "Dolby Atmos", type: "quality" });
+  } else if (modes?.includes("SONY_360RA")) {
+    badges.push({ label: "360 Reality Audio", type: "quality" });
+  }
+
+  if (badges.length === 0) return null;
+
+  return (
+    <>
+      {badges.map((b, i) => (
+        <span key={i} className={cn(
+          "inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium",
+          b.type === "hires" && "bg-tag-hires-bg text-accent-green",
+          b.type === "quality" && "bg-tag-quality-bg text-accent-amber",
+          b.type === "codec" && "bg-surface-primary text-fg-muted",
+        )}>
+          {b.label}
+        </span>
+      ))}
+    </>
+  );
+}

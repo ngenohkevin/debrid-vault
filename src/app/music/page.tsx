@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AudioQualityBadge } from "@/components/quality-tags";
+import { AudioQualityBadge, AudioModeBadges } from "@/components/quality-tags";
 import type { MusicTrack, MusicAlbum, MusicArtist, MusicDiscography } from "@/lib/types";
 import { formatDuration } from "@/lib/formatters";
 import { api } from "@/lib/api";
@@ -412,6 +412,7 @@ export default function MusicPage() {
                             {selectedAlbum.genre}
                           </span>
                         )}
+                        <AudioModeBadges modes={selectedAlbum.audioModes} mediaTags={selectedAlbum.mediaTags} />
                         {selectedAlbum.tracks?.[0]?.audioQuality && (
                           <AudioQualityBadge
                             bitDepth={selectedAlbum.tracks[0].audioQuality.maximumBitDepth}
@@ -542,7 +543,8 @@ function TrackCard({ track, downloading, onDownload, onAlbumClick }: {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <AudioModeBadges modes={track.audioModes} />
           {track.audioQuality && (
             <AudioQualityBadge bitDepth={track.audioQuality.maximumBitDepth} sampleRate={track.audioQuality.maximumSamplingRate} />
           )}
