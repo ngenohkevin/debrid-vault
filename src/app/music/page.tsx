@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Search, X, Music2, Disc3, Download, User, Loader2, CalendarClock, Upload, ChevronLeft, Check, FolderOpen, FileArchive, Tag, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +21,7 @@ type View = "search" | "album" | "artist";
 type SearchType = "track" | "album" | "artist";
 
 export default function MusicPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("track");
   const [loading, setLoading] = useState(false);
@@ -150,7 +152,8 @@ export default function MusicPage() {
     setDownloadingTracks((s) => new Set(s).add(track.id));
     try {
       await api.musicDownloadTrack({ trackId: track.id, title: track.title, artist: track.artist, album: track.albumTitle, trackNumber: trackNumber || 1 });
-      toast.success("Track queued");
+      toast.success("Track downloading");
+      router.push("/");
     } catch (err) { toast.error(err instanceof Error ? err.message : "Download failed"); }
     setDownloadingTracks((s) => { const n = new Set(s); n.delete(track.id); return n; });
   };
@@ -159,7 +162,8 @@ export default function MusicPage() {
     setDownloadingAlbums((s) => new Set(s).add(albumId));
     try {
       const result = await api.musicDownloadAlbum(albumId);
-      toast.success(`Queued ${result.tracks}/${result.totalTracks} tracks`);
+      toast.success(`Downloading ${result.tracks} tracks`);
+      router.push("/");
     } catch (err) { toast.error(err instanceof Error ? err.message : "Album download failed"); }
     setDownloadingAlbums((s) => { const n = new Set(s); n.delete(albumId); return n; });
   };
