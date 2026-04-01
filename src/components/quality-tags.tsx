@@ -78,9 +78,13 @@ export function HiResBadge() {
 }
 
 export function AudioQualityBadge({ bitDepth, sampleRate }: { bitDepth: number; sampleRate: number }) {
+  const isHiRes = bitDepth > 16 || sampleRate > 44100;
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-tag-quality-bg text-accent-amber font-mono">
-      {bitDepth}bit/{sampleRate}kHz
+    <span className={cn(
+      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium font-mono",
+      isHiRes ? "bg-tag-hires-bg text-accent-green" : "bg-tag-quality-bg text-accent-amber"
+    )}>
+      {bitDepth}bit/{sampleRate >= 1000 ? `${sampleRate / 1000}kHz` : `${sampleRate}kHz`}
     </span>
   );
 }
