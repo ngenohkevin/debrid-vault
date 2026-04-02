@@ -10,7 +10,7 @@ import { useDownloads } from "@/hooks/use-downloads";
 import { useStorage } from "@/hooks/use-storage";
 import { api } from "@/lib/api";
 import { formatSpeed } from "@/lib/formatters";
-import { WifiOff, Download, HardDrive, Zap, Trash2 } from "lucide-react";
+import { WifiOff, Download, HardDrive, Zap, Trash2, Loader2 } from "lucide-react";
 import type { DownloadItem } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -56,13 +56,16 @@ export default function DownloadsPage() {
   const totalSpeed = downloads.reduce((sum, d) => sum + d.speed, 0);
   const freeGB = storage ? Math.round(storage.external.available / (1024 * 1024 * 1024)) : null;
 
+  const [clearing, setClearing] = useState(false);
   const handleClearHistory = async () => {
+    setClearing(true);
     try {
       const done = downloads.filter((d) => ["completed", "error", "cancelled"].includes(d.status));
-      for (const d of done) await api.removeDownload(d.id);
+      await Promise.all(done.map((d) => api.removeDownload(d.id).catch(() => {})));
       toast.success("History cleared");
       refresh();
     } catch { toast.error("Failed to clear history"); }
+    setClearing(false);
   };
 
   return (
@@ -143,8 +146,8 @@ export default function DownloadsPage() {
                 <section className="space-y-1 lg:hidden">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[11px] font-semibold uppercase tracking-wider text-fg-muted">History</h2>
-                    <button onClick={handleClearHistory} className="flex items-center gap-1 text-[10px] text-fg-muted hover:text-accent-red transition-colors">
-                      <Trash2 className="h-3 w-3" /> Clear All
+                    <button onClick={handleClearHistory} disabled={clearing} className="flex items-center gap-1 text-[10px] text-fg-muted hover:text-accent-red transition-colors disabled:opacity-50">
+                      {clearing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {clearing ? "Clearing..." : "Clear All"}
                     </button>
                   </div>
                   <div className="divide-y divide-border-subtle">

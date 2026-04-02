@@ -69,12 +69,20 @@ function EpisodeRow({ item, slotsAvailable, onUpdate }: { item: DownloadItem; sl
           />
         </div>
 
-        {/* Row 3: speed + ETA + percentage */}
+        {/* Row 3: speed/size + percentage */}
         {item.status === "downloading" && (
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] font-mono text-accent-blue">{formatSpeed(item.speed)}</span>
-            <span className="text-[10px] font-mono text-fg-muted">&middot;</span>
-            <span className="text-[10px] font-mono text-accent-amber">ETA {formatETA(item.eta)}</span>
+            {item.speed > 0 ? (
+              <>
+                <span className="text-[10px] font-mono text-accent-blue">{formatSpeed(item.speed)}</span>
+                <span className="text-[10px] font-mono text-fg-muted">&middot;</span>
+                <span className="text-[10px] font-mono text-accent-amber">ETA {formatETA(item.eta)}</span>
+              </>
+            ) : item.size > 0 ? (
+              <span className="text-[10px] font-mono text-fg-muted">{formatBytes(item.downloaded)} / {formatBytes(item.size)}</span>
+            ) : (
+              <span className="text-[10px] font-mono text-fg-muted">Downloading...</span>
+            )}
             <span className="text-[10px] font-mono text-fg-muted ml-auto">{percent}%</span>
           </div>
         )}
